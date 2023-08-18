@@ -3,8 +3,8 @@ const JWT_KEY = require('../config/keys.js')
 const db = require("../database/db");
 
 async function getLoggedUser(req) { // no export
-    let logged_id = jwt.decode(req.cookies.login).payload
     try {
+        let logged_id = jwt.decode(req.cookies.login).payload
         const results = await db.query(`SELECT * FROM Users WHERE user_id=${logged_id};`)
         if (results.rows.length > 0) {
             return results.rows.at(0);
@@ -12,7 +12,7 @@ async function getLoggedUser(req) { // no export
             return null; // No user found
         }
     } catch (error) {
-        throw error;
+        return null
     }
 }
 
@@ -33,15 +33,25 @@ function logOutUser(req, res) {
 /// AUTHHHHHHHHHHHHH
 
 async function postSignUp(req, res) {
-    let user = req.body
-    console.log(user)
-    db.query(`INSERT INTO Users (name, email, password) values ('${user.name}', '${user.email}', '${user.password}');`, (error, results) => {
+    let data = req.body
+    console.log(data)
+    db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${data.password}');`, (error, results) => {
         if (error) {
             res.json(error.message)
         } else {
-            res.json(`${user.name} signed up!`)
+            res.json(`${data.name} signed up!`)
         }
     })
+    if (data.isDoctor != undefined) {
+        let doc_id = await db.query(`SELECT user_id FROM Users WHERE email='${data.email}'`)
+        db.query(`INSERT INTO Doctors (doctor_id, department, address, fee) values (${doc_id}, '${data.department}', '${data.address}', ${data.fee});`, (error, results) => {
+            if (error) {
+                res.json(error.message)
+            } else {
+                res.json(`${data.name} signed up!`)
+            }
+        })
+    }
 }
 
 async function getUserByEmail(email) {
@@ -90,9 +100,11 @@ async function getLogin(req, res) {
     let user = await getLoggedUser(req)
 
     if (user) {
-        res.redirect('/schedule')
+        res.redirect('/appointments')
     } else {
-        res.send('Login to continue.')
+        res.json({
+            message: "Login to continue."
+        })
     }
 }
 
@@ -114,7 +126,7 @@ async function getSchedule(req, res) {
         //     }
         //     res.json(results.rows)
         // })
-        res.json({message: "Invalid Request"})
+        res.json({ message: "Invalid Request" })
     }
 }
 
@@ -132,7 +144,7 @@ async function postSchedule(req, res) {
             }
         })
     } else {
-        res.json({message: "Invalid Request"})
+        res.json({ message: "Invalid Request" })
     }
 }
 
@@ -156,7 +168,7 @@ async function getAppointments(req, res) {
         s.doctor_id=${user.user_id};`)
 
         res.json(results.rows)
-        
+
     } else {
         let booked = {}
         const booked_results = await db.query(`SELECT
@@ -180,9 +192,9 @@ async function getAppointments(req, res) {
         Users u on d.doctor_id = u.user_id
         WHERE
         p.user_id=${user.user_id};`)
-        
+
         booked = booked_results.rows
-        
+
         let available = {}
         const available_results = await db.query(`SELECT
             s.start_time,
@@ -201,7 +213,7 @@ async function getAppointments(req, res) {
             WHERE
             s.appointed_patients < s.allowed_patients;
             --AND s.start_time > now()`)
-        
+
         available = available_results.rows
 
         let response = {
@@ -216,7 +228,7 @@ async function postAppointment(req, res) {
     let user = await getLoggedUser(req)
     let data = req.body
     let isDoctor = await CheckIsDoctor(user)
-    if (! isDoctor) {
+    if (!isDoctor) {
         db.query(`INSERT INTO Patients (user_id, schedule_id, patient_name, DOB, gender, appointment_date) 
         SELECT * FROM (
             values (${user.user_id}, ${data.schedule_id}, '${data.patient_name}', '${data.dob}'::DATE, '${data.gender}', '${data.appointment_date}'::DATE)
@@ -232,6 +244,10 @@ async function postAppointment(req, res) {
                 res.send(`Appointment booked for ${data.patient_name}`)
             }
         })
+    } else {
+        res.json({
+            message: "Invalid Request!"
+        })
     }
 }
 
@@ -244,7 +260,6 @@ async function getProfile(req, res) {
         console.log("doc:", isDoctor)
         try {
             const results = await db.query(`SELECT
-            D.doctor_id,
             U.name AS name,
             U.email AS email,
             D.department,
