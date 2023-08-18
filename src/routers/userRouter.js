@@ -16,15 +16,19 @@ userRouter
     .get(userController.getLogin)
     .post(userController.postLogin)
 
-userRouter
+userRouter  // only for doctor
     .route('/schedule')
-    .get(userController.getSchedule)
+    .get(checkLogin, userController.getSchedule) 
+    .post(checkLogin, userController.postSchedule)  
 
 userRouter
-    .route('/appointment')
+    .route('/appointments') 
+    .get(checkLogin, userController.getAppointments) // both
+    .post(checkLogin, userController.postAppointment) // patient
 
 userRouter
     .route('/profile')
+    .get(checkLogin, userController.getProfile)
 
     
 

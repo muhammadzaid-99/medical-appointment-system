@@ -77,6 +77,7 @@ WHERE NOT EXISTS (
 );
 
 --- TO GET DOCTOR INFO COMPLETE
+
 SELECT
     D.doctor_id,
     U.name AS user_name,
@@ -112,3 +113,35 @@ WHERE NOT EXISTS (
    WHERE  sc.schedule_id = schedule_id
    AND    allowed_patients = appointed_patients
 );
+
+
+
+
+SELECT
+    S.allowed_patients
+    S.appointed_patients
+    S.start_time
+    S.end_time
+    P.patient_name AS patient_name,
+    P.DOB AS patient_dob,
+    P.gender AS patient_gender
+    P.appointment_date AS patient_appointment_date
+FROM Schedule AS S
+JOIN Patients AS P ON S.schedule_id = P.schedule_id;
+
+
+
+
+SELECT
+    s.start_time,
+    s.end_time,
+    p.patient_name,
+    p.DOB,
+    p.gender,
+    p.appointment_date
+FROM
+    Schedule s
+JOIN
+    Patients p ON s.schedule_id = p.schedule_id
+WHERE
+    s.doctor_id=${user.user_id};

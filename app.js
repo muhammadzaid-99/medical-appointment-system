@@ -25,7 +25,7 @@ app.use('/', userRouter)
 // })
 
 app.get('/', (req, res) => {
-    db.query(`select * from schedule where schedule_id=23;`, (err, rslt)=>{
+    db.query(`select * from schedule where schedule_id=2;`, (err, rslt)=>{
         res.json(rslt)
     })
 })
