@@ -1,0 +1,64 @@
+DATABASE FORMAT
+
+Users Table:
+    user_id 	PRIMARY, SERIAL, AUTOMATIC
+    name 	64 CHARACTERS MAX
+    email 	255 CHARACTERS MAX
+    password 	128 CHARACTERS MAX
+
+Doctors Table:
+    *doctor_id 	PRIMARY, LINKED TO user_id IN "Users"
+    department 	32 CHARACTERS MAX
+    address 	32 CHARACTERS MAX
+    fee 	
+
+
+Schedule Table:
+    schedule_id 	SERIAL, PRIMARY, AUTOMATIC
+    *doctor_id 		LINKED TO doctor_id IN "Doctors"
+    allowed_patients 	
+    appointed_patients 
+    start_time 		DATE, TIME WITH TIMEZONE '2004-10-19 10:23:54+02'
+    end_time 		..
+
+
+Patients Table:
+    patient_id 		SERIAL, PRIMARY, AUTOMATIC
+    *user_id INT 	LINKED TO user_id IN "Users"
+    *schedule_id 	LINKED TO schedule_id IN "Schedule"
+    patient_name 	64 CHARACTERS MAX
+    DOB 		FORMAT 1999-01-08
+    gender 		'M', 'F' or 'O'
+    appointment_date 	
+
+
+------ All Requests and Responses are in JSON Format
+
+Route ('/signup'):
+POST	- requires name, email, password and isDoctor = false in case of regular user
+	- requires name, email, password, department, address, fee and isDoctor = true in case of doctor
+
+Route ('/login'):
+GET	will redirect to '/appointments' if already logged in, otherwise will ask to login
+POST	requires email, password
+	
+
+Route('/logout'):
+GET 	logs out user
+
+Route('/profile'):
+GET	sends user name, email (and also department, address, fee in case of doctor)
+
+Route('/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
+GET	sends an array of schedules of logged in doctor containing allowed_patients, appointed_patients, start_time, end_time
+POST	requires allowed_patients, appointed_patients, start_time, end_time in format specified
+
+Route('/appointments'): Only Patient can POST on this route.
+GET	- for doctor, sends an array of all appointments containing start_time, end_time, patient_name, DOB, gender, appointment_date
+	- for user, sends two objects booked_appointments and available_appointments
+	- booked_appointments contain array of appointments start_time, end_time, doctor_name, department, address, fee, patient_name, 	dob, gender, appointment_date
+	- available_appointments contain array of start_time, end_time, doctor_name, schedule_id, address, fee, department
+
+POST	requires schedule_id (can be obtained from GET appointments), patient_name, dob, gender, appointment_date
+
+...
