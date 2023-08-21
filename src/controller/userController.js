@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken')
 const JWT_KEY = require('../config/keys.js')
 const db = require("../database/db");
+const bcrypt = require('bcrypt');
 
 async function getLoggedUser(req) { // no export
     try {
@@ -35,7 +36,9 @@ function logOutUser(req, res) {
 async function postSignUp(req, res) {
     let data = req.body
     console.log(data)
-    db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${data.password}');`, (error, results) => {
+    let hashed_password = await bcrypt.hash(data.password, 10)
+    console.log(hashed_password)
+    db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${hashed_password}');`, (error, results) => {
         if (error) {
             res.json(error.message)
         } else {
@@ -71,7 +74,9 @@ async function postLogin(req, res) {
     try {
         let user = await getUserByEmail(req.body.email)
         if (user) {
-            if (user.password == req.body.password) {
+            // if (user.password == req.body.password) {
+            // NOTE: HERE FIRST CONDITION HAS TO BE REMOVED !!!!!!!!!!!!!
+            if (user.password == req.body.password || await bcrypt.compare(req.body.password, user.password)) {
                 let uid = user.user_id
                 let token = jwt.sign({ payload: uid }, JWT_KEY)
                 res.cookie('login', token)
@@ -267,6 +272,7 @@ async function getProfile(req, res) {
             D.fee
             FROM Doctors AS D
             JOIN Users AS U ON D.doctor_id = U.user_id;`)
+            res.json(results.rows)
         } catch (error) {
             throw error
         }
