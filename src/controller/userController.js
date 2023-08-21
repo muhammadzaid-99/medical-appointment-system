@@ -35,25 +35,19 @@ function logOutUser(req, res) {
 
 async function postSignUp(req, res) {
     let data = req.body
-    console.log(data)
     let hashed_password = await bcrypt.hash(data.password, 10)
-    console.log(hashed_password)
-    db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${hashed_password}');`, (error, results) => {
-        if (error) {
-            res.json(error.message)
-        } else {
-            res.json(`${data.name} signed up!`)
+    try {
+        let result = await db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${hashed_password}');`)
+
+        if (data.isDoctor) {
+            let user = await db.query(`SELECT * FROM Users WHERE email='${data.email}'`)
+            console.log(user.rows.at(0).user_id)
+            db.query(`INSERT INTO Doctors (doctor_id, department, address, fee) values (${user.rows.at(0).user_id}, '${data.department}', '${data.address}', ${data.fee});`)
+            .then(results =>{})
         }
-    })
-    if (data.isDoctor != undefined) {
-        let doc_id = await db.query(`SELECT user_id FROM Users WHERE email='${data.email}'`)
-        db.query(`INSERT INTO Doctors (doctor_id, department, address, fee) values (${doc_id}, '${data.department}', '${data.address}', ${data.fee});`, (error, results) => {
-            if (error) {
-                res.json(error.message)
-            } else {
-                res.json(`${data.name} signed up!`)
-            }
-        })
+        res.json(`${data.name} signed up!`)
+    } catch (error) {
+        console.log(error.message)
     }
 }
 

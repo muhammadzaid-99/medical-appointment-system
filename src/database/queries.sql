@@ -32,7 +32,7 @@ INSERT INTO rests (name, location, price_range) values ('KFC', 'LHR', 2);
 CREATE TABLE Users (
     user_id BIGSERIAL NOT NULL PRIMARY KEY, --automatic
     name VARCHAR(64) NOT NULL,
-    email VARCHAR(255) NOT NULL check(email LIKE '%_@__%.__%'),
+    email VARCHAR(255) UNIQUE NOT NULL check(email LIKE '%_@__%.__%'),
     password VARCHAR(128) NOT NULL
 );
 
