@@ -46,7 +46,7 @@ CREATE TABLE Doctors (
 CREATE TABLE Schedule (
     schedule_id BIGSERIAL NOT NULL PRIMARY KEY, --automatic
     doctor_id INT REFERENCES Doctors(doctor_id), --doctor
-    allowed_patients INT NOT NULL,
+    allowed_patients INT NOT NULL check(appointed_patients <= allowed_patients),
     appointed_patients INT check(appointed_patients <= allowed_patients),
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL -- like '2004-10-19 10:23:54+02'
@@ -145,3 +145,19 @@ JOIN
     Patients p ON s.schedule_id = p.schedule_id
 WHERE
     s.doctor_id=${user.user_id};
+
+
+-- check constraints
+    SELECT conname AS constraint_name,
+       conrelid::regclass AS table_name,
+       pg_get_constraintdef(oid) AS constraint_definition
+FROM pg_constraint
+WHERE confrelid = 'Schedule'::regclass;
+--
+SELECT conname AS constraint_name,
+       conrelid::regclass AS table_name,
+       pg_get_constraintdef(oid) AS constraint_definition
+FROM pg_constraint
+WHERE confrelid = 'Schedule'::regclass
+  AND contype = 'c';
+

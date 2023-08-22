@@ -20,6 +20,7 @@ userRouter  // only for doctor
     .route('/schedule')
     .get(checkLogin, userController.getSchedule) 
     .post(checkLogin, userController.postSchedule)  
+    .put(checkLogin, userController.updateSchedule)
 
 userRouter
     .route('/appointments') 
@@ -29,6 +30,7 @@ userRouter
 userRouter
     .route('/profile')
     .get(checkLogin, userController.getProfile)
+    .put(checkLogin, userController.updateProfile)
 
     
 
