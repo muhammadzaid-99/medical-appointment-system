@@ -43,7 +43,7 @@ async function postSignUp(req, res) {
             let user = await db.query(`SELECT * FROM Users WHERE email='${data.email}'`)
             console.log(user.rows.at(0).user_id)
             db.query(`INSERT INTO Doctors (doctor_id, department, address, fee) values (${user.rows.at(0).user_id}, '${data.department}', '${data.address}', ${data.fee});`)
-            .then(results =>{})
+                .then(results => { })
         }
         res.json(`${data.name} signed up!`)
     } catch (error) {
@@ -73,18 +73,18 @@ async function postLogin(req, res) {
     try {
         let user = await getUserByEmail(req.body.email)
         if (user) {
-            // if (user.password == req.body.password) {
             if (await bcrypt.compare(req.body.password, user.password)) {
                 let uid = user.user_id
                 let token = jwt.sign({ payload: uid }, JWT_KEY)
                 res.cookie('login', token)
+                let isDoctor = await CheckIsDoctor(user)
                 res.json({
                     message: "Login Success!",
-                    success: true
+                    success: true,
+                    isDoctor
                 })
 
             } else {
-                console.log('niche agaya')
                 res.json({
                     message: "Wrong Password!",
                     success: false
@@ -103,10 +103,15 @@ async function getLogin(req, res) {
     let user = await getLoggedUser(req)
 
     if (user) {
-        res.redirect('/appointments')
+        // res.redirect('/appointments')
+        res.json({
+            message: "Already logged in.",
+            loggedIn: true
+        })
     } else {
         res.json({
-            message: "Login to continue."
+            message: "Login to continue.",
+            loggedIn: false
         })
     }
 }
@@ -123,12 +128,6 @@ async function getSchedule(req, res) {
             }
         })
     } else {
-        // db.query(`SELECT * FROM Patients where user_id = '${logged_user.user_id}';`, (error, results) => {
-        //     if (error) {
-        //         res.json(error.message)
-        //     }
-        //     res.json(results.rows)
-        // })
         res.json({ message: "Invalid Request" })
     }
 }
@@ -169,25 +168,6 @@ async function updateSchedule(req, res) {
         res.json({ message: "Invalid Request" })
     }
 }
-
-// async function deleteSchedule(req, res) {
-//     let logged_user = await getLoggedUser(req)
-//     let indata = req.body
-//     let isDoctor = await CheckIsDoctor(logged_user)
-//     if (isDoctor) {
-//         db.query(`UPDATE Schedule 
-//         SET allowed_patients=${indata.allowed_patients}, start_time='${indata.start_time}', end_time='${indata.end_time}'
-//         WHERE schedule_id=${indata.schedule_id} AND doctor_id=${logged_user.user_id};`, (error, results) => {
-//             if (error) {
-//                 res.json(error.message)
-//             } else {
-//                 res.send('Schedule Created')
-//             }
-//         })
-//     } else {
-//         res.json({ message: "Invalid Request" })
-//     }
-// }
 
 async function getAppointments(req, res) {
     let user = await getLoggedUser(req)
@@ -292,18 +272,14 @@ async function postAppointment(req, res) {
     }
 }
 
-async function deleteAppointments(req, response) {
-
-}
-
 async function getProfile(req, res) {
     let user = await getLoggedUser(req)
     let isDoctor = await CheckIsDoctor(user)
     console.log(user)
-    
-    if (isDoctor) {
-        console.log("doc:", isDoctor)
-        try {
+
+    try {
+        if (isDoctor) {
+            console.log("doc:", isDoctor)
             const results = await db.query(`SELECT
             U.name AS name,
             U.email AS email,
@@ -311,19 +287,20 @@ async function getProfile(req, res) {
             D.address,
             D.fee
             FROM Doctors AS D
-            JOIN Users AS U ON D.doctor_id = U.user_id;`)
+            JOIN Users AS U ON D.doctor_id = U.user_id
+            WHERE user_id=${user.user_id};`)
             res.json(results.rows)
-        } catch (error) {
-            throw error
-        }
 
-    } else {
-        db.query(`SELECT name, email FROM Users WHERE user_id=${user.user_id};`, (error, results) => {
-            if (error) res.json(error.message)
-            else {
-                res.json(results.rows)
-            }
-        })
+        } else {
+            db.query(`SELECT name, email FROM Users WHERE user_id=${user.user_id};`, (error, results) => {
+                if (error) res.json(error.message)
+                else {
+                    res.json(results.rows)
+                }
+            })
+        }
+    } catch (error) {
+        res.json({message: error.message})
     }
 }
 
@@ -337,13 +314,13 @@ async function updateProfile(req, res) {
         const results = await db.query(`UPDATE Users
         SET name='${indata.name}'
         WHERE user_id=${user.user_id};`)
-        
+
         if (isDoctor) {
             const results = await db.query(`UPDATE Doctors
             SET department='${indata.department}', address='${indata.address}', fee=${indata.fee}
             WHERE doctor_id=${user.user_id};`)
         }
-        res.json({message: "Profile Updated Successfully!"})
+        res.json({ message: "Profile Updated Successfully!" })
 
     } catch (error) {
         res.json({
