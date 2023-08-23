@@ -39,7 +39,7 @@ POST	- requires name, email, password and isDoctor = false in case of regular us
 	- requires name, email, password, department, address, fee and isDoctor = true in case of doctor
 
 Route ('/login'):
-GET	will redirect to '/appointments' if already logged in, otherwise will ask to login
+GET	    will return message and loggedIn (true or false)
 POST	requires email, password
 	
 
