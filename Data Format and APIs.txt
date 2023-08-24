@@ -2,8 +2,8 @@ DATABASE FORMAT
 
 Users Table:
     user_id 	PRIMARY, SERIAL, AUTOMATIC
-    name 	64 CHARACTERS MAX
-    email 	255 CHARACTERS MAX
+    name    	64 CHARACTERS MAX
+    email 	    255 CHARACTERS MAX
     password 	128 CHARACTERS MAX
 
 Doctors Table:
@@ -24,19 +24,19 @@ Schedule Table:
 
 Patients Table:
     patient_id 		SERIAL, PRIMARY, AUTOMATIC
-    *user_id INT 	LINKED TO user_id IN "Users"
+    *user_id     	LINKED TO user_id IN "Users"
     *schedule_id 	LINKED TO schedule_id IN "Schedule"
     patient_name 	64 CHARACTERS MAX
-    DOB 		FORMAT 1999-01-08
-    gender 		'M', 'F' or 'O'
-    appointment_date 	
+    age 		    
+    gender 		    'M', 'F' or 'O'
+    appointment_date 	FORMAT 1999-01-08
 
 
 ------ All Requests and Responses are in JSON Format
 
 Route ('/signup'):
 POST	- requires name, email, password and isDoctor = false in case of regular user
-	- requires name, email, password, department, address, fee and isDoctor = true in case of doctor
+	    - requires name, email, password, department, address, fee and isDoctor = true in case of doctor
 
 Route ('/login'):
 GET	    will return message and loggedIn (true or false)
@@ -47,18 +47,20 @@ Route('/logout'):
 GET 	logs out user
 
 Route('/profile'):
-GET	sends user name, email (and also department, address, fee in case of doctor)
+GET 	sends user name, email (and also department, address, fee in case of doctor)
+PUT     to update profile, requires name, password (optional) and department, address, fee (for doctor)
 
 Route('/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
-GET	sends an array of schedules of logged in doctor containing allowed_patients, appointed_patients, start_time, end_time
+GET	    sends an array of schedules of logged in doctor containing schedule_id, allowed_patients, appointed_patients, start_time, end_time
 POST	requires allowed_patients, start_time, end_time in format specified
+PUT     to update existing schedule, requires schedule_id, allowed_patients
 
 Route('/appointments'): Only Patient can POST on this route.
-GET	- for doctor, sends an array of all appointments containing start_time, end_time, patient_name, DOB, gender, appointment_date
-	- for user, sends two objects booked_appointments and available_appointments
-	- booked_appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, 	dob, gender, appointment_date
-	- available_appointments contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
+GET	    - for doctor, sends an array of all appointments containing start_time, end_time, patient_name, age, gender, appointment_date
+	    - for user, sends two objects booked_appointments and available_appointments
+	    - booked_appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, age, gender, appointment_date
+	    - available_appointments contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
 
-POST	requires schedule_id (can be obtained from GET appointments), patient_name, dob, gender, appointment_date
+POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender, appointment_date
 
 ...

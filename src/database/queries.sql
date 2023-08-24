@@ -10,6 +10,13 @@ DROP TABLE <table_name> --(delete table)
 ALTER TABLE <table_name> ADD COLUMN <column_name> <data_type>; --(add new column)
 ALTER TABLE <table_name> DROP COLUMN <column_name>; --(delete a column)
 
+
+-- CHECK CONSTRAINTS
+SELECT conname, conrelid::regclass AS table_name, pg_get_constraintdef(oid) AS constraint_definition
+FROM pg_constraint
+WHERE conrelid = 'your_table_name'::regclass;
+
+
 CREATE TABLE products (
     id INT,
     name VARCHAR(32), -- or alternatively TEXT type
@@ -57,24 +64,29 @@ CREATE TABLE Patients (
     user_id INT REFERENCES Users(user_id),  --user
     schedule_id INT REFERENCES Schedule(schedule_id), --schedule
     patient_name VARCHAR(64) NOT NULL,
-    DOB DATE NOT NULL, --'format: 1999-01-08 requires casting ::DATE'
+    age INT NOT NULL, 
     gender CHARACTER(1) NOT NULL check(gender IN ('M', 'F', 'O')),
-    appointment_date DATE NOT NULL
+    appointment_date DATE NOT NULL --'format: 1999-01-08 requires casting ::DATE'
 );
 
 insert into Users (name, email, password) values ('Umair', 'ghi@gmail.com', '123');
 insert into Doctors (doctor_id, department, address, fee) values (4, 'cardiology', 'ABC123', 789);
 insert into Schedule (doctor_id, allowed_patients, appointed_patients, start_time, end_time) values (4, 5, 0, '2023-08-17 10:00:00+05', '2023-08-17 11:00:00+05');
 
-insert into Patients (user_id, schedule_id, patient_name, DOB, gender, appointment_date) 
+insert into Patients (user_id, schedule_id, patient_name, age, gender, appointment_date) 
 SELECT * FROM (
-    values (3, 2, 'patient2', '2001-01-09'::DATE, 'F', '2023-08-16'::DATE)
-) AS i(user_id, schedule_id, patient_name, DOB, gender, appointment_date)
+    values (3, 2, 'patient2', 20, 'F', '2023-08-16'::DATE)
+) AS i(user_id, schedule_id, patient_name, age, gender, appointment_date)
 WHERE NOT EXISTS (
    SELECT FROM Schedule sc
    WHERE  sc.schedule_id = i.schedule_id
    AND    sc.allowed_patients = sc.appointed_patients
 );
+
+-- TIME CONSTRAINT
+ALTER TABLE events
+ADD CONSTRAINT check_future_event_timestamp
+CHECK (event_timestamp > CURRENT_TIMESTAMP);
 
 --- TO GET DOCTOR INFO COMPLETE
 
@@ -123,7 +135,7 @@ SELECT
     S.start_time
     S.end_time
     P.patient_name AS patient_name,
-    P.DOB AS patient_dob,
+    P.age AS patient_age,
     P.gender AS patient_gender
     P.appointment_date AS patient_appointment_date
 FROM Schedule AS S
@@ -136,7 +148,7 @@ SELECT
     s.start_time,
     s.end_time,
     p.patient_name,
-    p.DOB,
+    p.age,
     p.gender,
     p.appointment_date
 FROM
