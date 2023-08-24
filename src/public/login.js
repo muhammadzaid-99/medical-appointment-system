@@ -1,5 +1,4 @@
-
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
     const form = document.querySelector("#login-form");
     const loginBtn = document.getElementById("login-btn");
 
@@ -32,8 +31,19 @@ document.addEventListener("DOMContentLoaded", function() {
             console.log('Login result:', result.message);
 
             if (result.success) {
+                // Check if the user is a doctor
+
+                if (result.isDoctor) {
+                    // Show the "Schedule" button for doctors
+                    const scheduleButton = document.getElementById("schedule-button");
+                    scheduleButton.style.display = 'block';
+                } // move this code to home.js
+                // const {doctor} = Qs.parse(location.search, {
+                //     ignoreQueryPrefix: true
+                // })
+
                 // Redirect to the main page after successful login
-                window.location.href = '/Home.html';
+                window.location.href = `/Home.html?doctor=${result.isDoctor}`;
             } else {
                 alert("Invalid email or password. Please try again.");
             }
@@ -43,5 +53,6 @@ document.addEventListener("DOMContentLoaded", function() {
         }
     });
 });
+
 
 
