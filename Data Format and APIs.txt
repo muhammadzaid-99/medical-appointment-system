@@ -61,6 +61,6 @@ GET	    - for doctor, sends an array of all appointments containing start_time, 
 	    - booked_appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, age, gender, appointment_date
 	    - available_appointments contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
 
-POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender, appointment_date
+POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
 
 ...
