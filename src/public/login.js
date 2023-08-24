@@ -33,11 +33,11 @@ document.addEventListener("DOMContentLoaded", async function() {
             if (result.success) {
                 // Check if the user is a doctor
 
-                if (result.isDoctor) {
-                    // Show the "Schedule" button for doctors
-                    const scheduleButton = document.getElementById("schedule-button");
-                    scheduleButton.style.display = 'block';
-                } // move this code to home.js
+                // if (result.isDoctor) {
+                //     // Show the "Schedule" button for doctors
+                //     const scheduleButton = document.getElementById("schedule-button");
+                //     scheduleButton.style.display = 'block';
+                // } // move this code to home.js
                 // const {doctor} = Qs.parse(location.search, {
                 //     ignoreQueryPrefix: true
                 // })

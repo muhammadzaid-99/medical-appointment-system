@@ -1,125 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-  font-family: Arial, sans-serif;
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
 }
 
-h1, h2 {
-  text-align: center;
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.doctor-selection, .calendar, .appointment-booking {
-  margin: 20px;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
 }
 
-.calendar-container {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  grid-auto-rows: minmax(50px, auto);
-  border: 1px solid #ccc;
-  margin-top: 20px;
+form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
 }
 
-.calendar-header {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-weight: bold;
-  background-color: #f0f0f0;
-  padding: 5px;
-  text-align: center;
-  border-bottom: 1px solid #ccc;
+form input[type="text"],
+form input[type="number"],
+form select,
+form input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
-.calendar-body {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  border-left: 1px solid #ccc;
-  border-top: 1px solid #ccc;
+form button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
-.day-cell {
-  border-right: 1px solid #ccc;
-  border-bottom: 1px solid #ccc;
-  padding: 5px;
+form button:hover {
+    background-color: #0056b3;
 }
 
-.time-slots {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-}
-
-.time-slot {
-  border: 1px solid #ccc;
-  padding: 5px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.time-slot.selected {
-  background-color: #007bff;
-  color: white;
-}
-
-button {
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-  </style>
-  <title>Hospital Management System</title>
-  
+    </style>
+    <title>Appointment Form</title>
 </head>
 <body>
-  <h1>Hospital Management System</h1>
-  
-  <div class="doctor-selection">
-    <label for="doctorSelect">Select a Doctor:</label>
-    <select id="doctorSelect">
-        <option value="dr1">Doctor 1</option>
-      <option value="dr2">Doctor 2</option>
-      <option value="dr3">Doctor 3</option>
-    </select>
-  </div>
-  
-  <div class="calendar">
-    <h2>Doctor's Schedule</h2>
-    <div class="calendar-container">
-      <div class="calendar-header">
-        <!-- Days of the week will be populated here -->
-      </div>
-      <div class="calendar-body">
-        <!-- Calendar cells will be populated here -->
-      </div>
-    </div>
-  </div>
-  
-  <div class="appointment-booking">
-    <h2>Book an Appointment</h2>
-    <p>Selected Doctor: <span id="selectedDoctor">None</span></p>
-    <p>Select a slot to book:</p>
-    <div class="time-slots">
-      <!-- Time slots displayed here -->
-    </div>
-    <button id="bookButton" disabled>Book Appointment</button>
-  </div>
+  <div class="container">
+      <h1>Appointment Form</h1>
+      <form id="appointment-form">
+          <label for="patient-name">Patient Name:</label>
+          <input type="text" id="patient-name" name="patient-name" required>
 
+          <label for="age">Age:</label>
+          <input type="number" id="age" name="age" required>
+
+          <label for="gender">Gender:</label>
+          <select id="gender" name="gender" required>
+              <option value="M">Male</option>
+              <option value="F">Female</option>
+              <option value="O">Other</option>
+          </select>
+          <button type="submit">Submit Appointment</button>
+      </form>
+  </div>
   <script src="Appoinment.js"></script>
 </body>
 </html>
