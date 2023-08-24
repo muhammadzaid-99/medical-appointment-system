@@ -90,7 +90,7 @@ async function getSchedule(req, res) {
         } else {
             res.json({ message: "Invalid Request" })
         }
-    } catch(error) {
+    } catch (error) {
         res.json({
             message: error.message
         })
@@ -108,7 +108,7 @@ async function postSchedule(req, res) {
                 if (error) {
                     res.json(error.message)
                 } else {
-                    res.json({message: 'Schedule Created'})
+                    res.json({ message: 'Schedule Created' })
                 }
             })
         } else {
@@ -133,13 +133,13 @@ async function updateSchedule(req, res) {
                 if (error) {
                     res.json(error.message)
                 } else {
-                    res.json({message: 'Schedule Updated'})
+                    res.json({ message: 'Schedule Updated' })
                 }
             })
         } else {
             res.json({ message: "Invalid Request" })
         }
-    } catch(error) {
+    } catch (error) {
         res.json({
             message: error.message
         })
@@ -165,9 +165,9 @@ async function getAppointments(req, res) {
                 Patients p ON s.schedule_id = p.schedule_id
             WHERE
             s.doctor_id=${user.user_id};`)
-    
+
             res.json(results.rows)
-    
+
         } else {
             let booked = {}
             const booked_results = await db.query(`SELECT
@@ -191,9 +191,9 @@ async function getAppointments(req, res) {
             Users u on d.doctor_id = u.user_id
             WHERE
             p.user_id=${user.user_id};`)
-    
+
             booked = booked_results.rows
-    
+
             let available = {}
             const available_results = await db.query(`SELECT
                 s.start_time,
@@ -212,16 +212,16 @@ async function getAppointments(req, res) {
                 WHERE
                 s.appointed_patients < s.allowed_patients;
                 --AND s.start_time > now()`)
-    
+
             available = available_results.rows
-    
+
             let response = {
                 booked_appointments: booked,
                 available_appointments: available
             }
             res.json(response)
         }
-    } catch(error) {
+    } catch (error) {
         res.json({
             message: error.message
         })
@@ -234,9 +234,13 @@ async function postAppointment(req, res) {
     let isDoctor = await methods.CheckIsDoctor(user)
     try {
         if (!isDoctor) {
+            const currentDate = new Date();
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1; // Note: Months are zero-based
+            const day = currentDate.getDate();
             db.query(`INSERT INTO Patients (user_id, schedule_id, patient_name, age, gender, appointment_date) 
             SELECT * FROM (
-                values (${user.user_id}, ${data.schedule_id}, '${data.patient_name}', ${data.age}, '${data.gender}', '${data.appointment_date}'::DATE)
+                values (${user.user_id}, ${data.schedule_id}, '${data.patient_name}', ${data.age}, '${data.gender}', '${year}-${month}-${day}'::DATE)
             ) AS i(user_id, schedule_id, patient_name, age, gender, appointment_date)
             WHERE NOT EXISTS (
                SELECT FROM Schedule sc
@@ -289,7 +293,7 @@ async function getProfile(req, res) {
             })
         }
     } catch (error) {
-        res.json({message: error.message})
+        res.json({ message: error.message })
     }
 }
 
@@ -297,9 +301,9 @@ async function updateProfile(req, res) {
     let user = await methods.getLoggedUser(req)
     let isDoctor = await methods.CheckIsDoctor(user)
     let indata = req.body
-    
+
     try {
-        
+
         if (indata.password) {
             let newPass = await methods.encryptPassword(indata.password)
             const results = await db.query(`UPDATE Users
@@ -328,4 +332,4 @@ async function updateProfile(req, res) {
 
 
 
-module.exports = {logOutUser, postSignUp, postLogin, getLogin, getSchedule, postSchedule, updateSchedule, getAppointments, postAppointment, getProfile, updateProfile}
+module.exports = { logOutUser, postSignUp, postLogin, getLogin, getSchedule, postSchedule, updateSchedule, getAppointments, postAppointment, getProfile, updateProfile }
