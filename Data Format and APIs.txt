@@ -56,10 +56,10 @@ POST	requires allowed_patients, start_time, end_time in format specified
 PUT     to update existing schedule, requires schedule_id, allowed_patients
 
 Route('/appointments'): Only Patient can POST on this route.
-GET	    - for doctor, sends an array of all appointments containing start_time, end_time, patient_name, age, gender, appointment_date
-	    - for user, sends two objects booked_appointments and available_appointments
-	    - booked_appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, age, gender, appointment_date
-	    - available_appointments contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
+GET	    - for doctor, sends isDoctor=true and an array of all appointments containing start_time, end_time, patient_name, age, gender, appointment_date
+	    - for user, sends isDoctor=false and two objects appointments and available_slots
+	    - appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, age, gender, appointment_date
+	    - available_slots contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
 
 POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
 

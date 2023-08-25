@@ -166,7 +166,11 @@ async function getAppointments(req, res) {
             WHERE
             s.doctor_id=${user.user_id};`)
 
-            res.json(results.rows)
+            let response = {
+                isDoctor: true,
+                appointments: results.rows
+            }
+            res.json(response)
 
         } else {
             let booked = {}
@@ -216,8 +220,9 @@ async function getAppointments(req, res) {
             available = available_results.rows
 
             let response = {
-                booked_appointments: booked,
-                available_appointments: available
+                isDoctor: false,
+                appointments: booked,
+                available_slots: available
             }
             res.json(response)
         }
