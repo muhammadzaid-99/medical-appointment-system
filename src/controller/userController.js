@@ -84,7 +84,9 @@ async function getSchedule(req, res) {
                 if (error) {
                     res.json(error.message)
                 } else {
-                    res.json(results.rows)
+                    res.json({
+                        schedules: results.rows
+                    })
                 }
             })
         } else {
@@ -108,7 +110,10 @@ async function postSchedule(req, res) {
                 if (error) {
                     res.json(error.message)
                 } else {
-                    res.json({ message: 'Schedule Created' })
+                    res.json({
+                    message: 'Schedule Created',
+                    success: true
+                })
                 }
             })
         } else {
@@ -214,8 +219,8 @@ async function getAppointments(req, res) {
                 JOIN
                 Users u ON u.user_id = d.doctor_id
                 WHERE
-                s.appointed_patients < s.allowed_patients;
-                --AND s.start_time > now()`)
+                s.appointed_patients < s.allowed_patients
+                AND s.start_time > NOW();`)
 
             available = available_results.rows
 
@@ -255,7 +260,10 @@ async function postAppointment(req, res) {
                 if (error) res.json(error.message)
                 else {
                     db.query(`UPDATE Schedule SET appointed_patients = appointed_patients + 1 WHERE schedule_id=${data.schedule_id}`)
-                    res.send(`Appointment booked for ${data.patient_name}`)
+                    res.json({
+                        message: `Appointment booked for ${data.patient_name}`,
+                        success: true  
+                    })
                 }
             })
         } else {

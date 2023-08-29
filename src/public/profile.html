@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f2f2f2;
+}
+
+h1, h2 {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.profile-view, .profile-edit {
+    width: 50%;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-edit {
+    display: none;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    margin-top: 10px;
+}
+
+input, button {
+    padding: 8px;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+    </style>
+</head>
+<body>
+    <h1>User Profile</h1>
+    <div class="profile-view">
+        <h2>Profile Information</h2>
+        <p><strong>Name:</strong> John Doe</p>
+        <p><strong>Email:</strong> john@example.com</p>
+        <p><strong>Department:</strong> Cardiology</p>
+        <p><strong>Address:</strong> 123 Main St, City</p>
+        <p><strong>Fee:</strong> $150 (Doctor)</p>
+    </div>
+    
+    <div class="profile-edit">
+        <h2>Edit Profile</h2>
+        <form id="profile-form">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            <label for="department">Department:</label>
+            <input type="text" id="department" name="department">
+            <label for="address">Address:</label>
+            <input type="text" id="address" name="address">
+            <label for="fee">Fee:</label>
+            <input type="text" id="fee" name="fee">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password">
+            <button type="submit">Update Profile</button>
+        </form>
+    </div>
+    
+    <script src="profile.js"></script>
+</body>
+</html>
