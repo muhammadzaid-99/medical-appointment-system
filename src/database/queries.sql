@@ -66,7 +66,8 @@ CREATE TABLE Patients (
     patient_name VARCHAR(64) NOT NULL,
     age INT NOT NULL, 
     gender CHARACTER(1) NOT NULL check(gender IN ('M', 'F', 'O')),
-    appointment_date DATE NOT NULL --'format: 1999-01-08 requires casting ::DATE'
+    appointment_date DATE NOT NULL, --'format: 1999-01-08 requires casting ::DATE'
+    turn INT NOT NULL
 );
 
 insert into Users (name, email, password) values ('Umair', 'ghi@gmail.com', '123');
@@ -172,4 +173,26 @@ SELECT conname AS constraint_name,
 FROM pg_constraint
 WHERE confrelid = 'Schedule'::regclass
   AND contype = 'c';
+
+--- Count Appointed Patients and Save in Schedule
+CREATE OR REPLACE FUNCTION update_patients_count()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Update the child_count in parent_table
+  UPDATE Schedule
+  SET appointed_patients = (SELECT COUNT(*) FROM Patients WHERE schedule_id = NEW.schedule_id)
+  WHERE schedule_id = NEW.schedule_id;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_patients_count_trigger
+AFTER INSERT OR UPDATE OR DELETE ON Patients
+FOR EACH ROW
+EXECUTE FUNCTION update_patients_count();
+
+-- list all triggers
+SELECT trigger_name
+FROM information_schema.triggers;
 

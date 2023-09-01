@@ -16,6 +16,15 @@ async function getLoggedUser(req) { // no export
     }
 }
 
+function dateToString(date) {
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // Note: Months are zero-based
+    const day = date.getDate();
+
+    let str = `${year}-${month}-${day}`
+    return str
+}
+
 // async function getUserData(req, res) {
 //     let user = await getLoggedUser(req)
 //     res.json({
@@ -42,14 +51,48 @@ async function getUserByEmail(email) {
     }
 }
 
-async function CheckIsDoctor(user) {
+async function CheckIsDoctor(req) {
 
-    const results = await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)
-
-    if (results.rowCount == 1) {
-        return true
+    if (req.cookies.usertype) {
+        let usertype = jwt.decode(req.cookies.usertype).payload
+        if (usertype) //doctor: 1
+            return true
+    } else {
+        let user = await getLoggedUser(req)
+        
+        const results = await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)
+    
+        if (results.rowCount == 1) {
+            return true
+        }
     }
     return false
 }
 
-module.exports ={getLoggedUser, getUserByEmail, encryptPassword, CheckIsDoctor}
+async function UpdateAppointedPatients(scheduleID) {
+    
+    try {
+        const count = (await db.query(`
+        SELECT COUNT(*)
+        FROM Patients
+        WHERE schedule_id = ${scheduleID};
+        `)).rows.at(0).count
+        console.log(count)
+        const updt = await db.query(`
+        UPDATE Schedule
+        SET appointed_patients = ${count}
+        WHERE schedule_id=${scheduleID}
+        `)
+        return {
+            success: true,
+            message: 'Done'
+        }
+    } catch(error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+module.exports = { getLoggedUser, getUserByEmail, encryptPassword, CheckIsDoctor, dateToString, UpdateAppointedPatients}

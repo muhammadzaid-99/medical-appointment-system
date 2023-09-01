@@ -53,14 +53,20 @@ PUT     to update profile, requires name, password (optional) and department, ad
 Route('/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
 GET	    sends an array of schedules of logged in doctor containing schedule_id, allowed_patients, appointed_patients, start_time, end_time
 POST	requires allowed_patients, start_time, end_time in format specified
-PUT     to update existing schedule, requires schedule_id, allowed_patients
+PUT     to update existing schedule, requires schedule_id, allowed_patients, patients will be rescheduled automatically, past schedules cannot be modifies
+DELETE  delete schedule or time_slot, requires schedule_id, patients will be rescheduled automatically, past schedules cannot be deleted
 
-Route('/appointments'): Only Patient can POST on this route.
+Route('/appointments'): Only Patient can POST, DELETE on this route.
 GET	    - for doctor, sends isDoctor=true and an array of all appointments containing start_time, end_time, patient_name, age, gender, appointment_date
 	    - for user, sends isDoctor=false and two objects appointments and available_slots
-	    - appointments contain array of appointments containing start_time, end_time, doctor_name, department, address, fee, patient_name, age, gender, appointment_date
+	    - appointments contain array of appointments containing patient_id, start_time, end_time, doctor_name, department, address, fee,
+        patient_name, age, gender, appointment_date, turn, start_interval, end_interval
 	    - available_slots contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
 
-POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
+!!!!    >>> Thinking of moving available_slots in /schedule route <<<
 
+POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
+DELETE  deletes appointment, requires patient_id (can be obtained from GET appointments)
+
+last updated 2023-09-02 00:38
 ...

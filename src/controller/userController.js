@@ -2,7 +2,8 @@ const db = require("../database/db");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const JWT_KEY = require('../config/keys.js')
-const methods = require('./methods.js')
+const methods = require('./methods.js');
+const { application } = require("express");
 
 
 function logOutUser(req, res) {
@@ -12,36 +13,39 @@ function logOutUser(req, res) {
 }
 
 async function postSignUp(req, res) {
-    let data = req.body
-    let hashed_password = await methods.encryptPassword(data.password)
+    const data = req.body
+    const hashed_password = await methods.encryptPassword(data.password)
     try {
-        let result = await db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${hashed_password}');`)
+        const result = await db.query(`INSERT INTO Users (name, email, password) values ('${data.name}', '${data.email}', '${hashed_password}');`)
 
         if (data.isDoctor) {
-            let user = await db.query(`SELECT * FROM Users WHERE email='${data.email}'`)
-            console.log(user.rows.at(0).user_id)
+            const user = await db.query(`SELECT * FROM Users WHERE email='${data.email}'`)
             db.query(`INSERT INTO Doctors (doctor_id, department, address, fee) values (${user.rows.at(0).user_id}, '${data.department}', '${data.address}', ${data.fee});`)
                 .then(results => { })
         }
-        res.json(`${data.name} signed up!`)
+        res.json({message: `${data.name} signed up!`, success: true})
     } catch (error) {
-        console.log(error.message)
+        res.json({message: error.message, success: false})
     }
 }
 
 async function postLogin(req, res) {
     try {
-        let user = await methods.getUserByEmail(req.body.email)
+        const user = await methods.getUserByEmail(req.body.email)
         if (user) {
             if (await bcrypt.compare(req.body.password, user.password)) {
                 let uid = user.user_id
-                let token = jwt.sign({ payload: uid }, JWT_KEY)
-                res.cookie('login', token)
-                let isDoctor = await methods.CheckIsDoctor(user)
+                let login_cookie = jwt.sign({ payload: uid }, JWT_KEY)
+                res.cookie('login', login_cookie)
+                // let isDoctor = await methods.CheckIsDoctor(user)
+                const isDoctor = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
+                let user_payload = isDoctor ? 1 : 0
+                let usertype_cookie = jwt.sign({ payload: user_payload }, JWT_KEY)
+                res.cookie('usertype', usertype_cookie)
                 res.json({
                     message: "Login Success!",
                     success: true,
-                    isDoctor
+                    isDoctor: true
                 })
 
             } else {
@@ -60,7 +64,11 @@ async function postLogin(req, res) {
 }
 
 async function getLogin(req, res) {
-    let user = await methods.getLoggedUser(req)
+    const user = await methods.getLoggedUser(req)
+    const isDoctor = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
+    let user_payload = isDoctor ? 1 : 0
+    let usertype_cookie = jwt.sign({ payload: user_payload }, JWT_KEY)
+    res.cookie('usertype', usertype_cookie)
 
     if (user) {
         res.json({
@@ -76,8 +84,8 @@ async function getLogin(req, res) {
 }
 
 async function getSchedule(req, res) {
-    let logged_user = await methods.getLoggedUser(req)
-    let isDoctor = await methods.CheckIsDoctor(logged_user)
+    const logged_user = await methods.getLoggedUser(req)
+    const isDoctor = await methods.CheckIsDoctor(req)
     try {
         if (isDoctor) {
             db.query(`SELECT schedule_id, allowed_patients, appointed_patients, start_time, end_time FROM Schedule where doctor_id='${logged_user.user_id}';`, (error, results) => {
@@ -100,9 +108,9 @@ async function getSchedule(req, res) {
 }
 
 async function postSchedule(req, res) {
-    let logged_user = await methods.getLoggedUser(req)
-    let indata = req.body
-    let isDoctor = await methods.CheckIsDoctor(logged_user)
+    const logged_user = await methods.getLoggedUser(req)
+    const indata = req.body
+    const isDoctor = await methods.CheckIsDoctor(req)
     try {
         if (isDoctor) {
             db.query(`INSERT INTO Schedule (doctor_id, allowed_patients, appointed_patients, start_time, end_time)
@@ -111,9 +119,9 @@ async function postSchedule(req, res) {
                     res.json(error.message)
                 } else {
                     res.json({
-                    message: 'Schedule Created',
-                    success: true
-                })
+                        message: 'Schedule Created',
+                        success: true
+                    })
                 }
             })
         } else {
@@ -127,18 +135,87 @@ async function postSchedule(req, res) {
 }
 
 async function updateSchedule(req, res) {
-    let logged_user = await methods.getLoggedUser(req)
-    let indata = req.body
-    let isDoctor = await methods.CheckIsDoctor(logged_user)
+    const logged_user = await methods.getLoggedUser(req)
+    const inData = req.body
+    const isDoctor = await methods.CheckIsDoctor(req)
+    const schedule = (await db.query(`SELECT * FROM Schedule WHERE schedule_id=${inData.schedule_id};`)).rows.at(0)
     try {
         if (isDoctor) {
-            db.query(`UPDATE Schedule 
-            SET allowed_patients=${indata.allowed_patients}
-            WHERE schedule_id=${indata.schedule_id} AND doctor_id=${logged_user.user_id};`, (error, results) => {
+            const currentTime = new Date()
+            const scheduleTime = new Date((schedule.start_time).toISOString())
+            if (currentTime > scheduleTime) {
+                res.json({
+                    message: 'Past schedules cannot be modified.',
+                    success: false
+                })
+            }
+
+            if (schedule.appointed_patients < inData.allowed_patients) {
+                db.query(`UPDATE Schedule 
+                SET allowed_patients=${inData.allowed_patients}
+                WHERE schedule_id=${inData.schedule_id} AND doctor_id=${logged_user.user_id}
+                AND start_time > NOW();`, (error, results) => {
+                    if (error) {
+                        res.json(error.message)
+                    } else {
+                        res.json({ message: 'Schedule Updated', success: true })
+                    }
+                })
+            } else {
+                const updt = await db.query(`UPDATE Schedule 
+                SET appointed_patients=${inData.allowed_patients}, allowed_patients=${inData.allowed_patients}
+                WHERE schedule_id=${inData.schedule_id} AND doctor_id=${logged_user.user_id} 
+                AND start_time > NOW();`)
+
+                let patientsToBeRescheduled = schedule.appointed_patients - inData.allowed_patients
+                const resch = await reschedulePatients(schedule, patientsToBeRescheduled)
+                res.json({
+                    message: resch.message
+                })
+            }
+        } else {
+            res.json({ message: "Invalid Request" })
+        }
+    } catch (error) {
+        res.json({
+            message: error.message
+        })
+    }
+}
+
+async function deleteSchedule(req, res) {
+    const inData = req.body
+    const isDoctor = await methods.CheckIsDoctor(req)
+    const schedule = (await db.query(`SELECT * FROM Schedule WHERE schedule_id=${inData.schedule_id};`)).rows.at(0)
+    try {
+        if (isDoctor) {
+            const currentTime = new Date()
+            const scheduleTime = new Date((schedule.start_time).toISOString())
+            console.log("Time", currentTime > scheduleTime)
+            if (currentTime > scheduleTime) {
+                res.json({
+                    message: 'Past schedules cannot be deleted.',
+                    success: false
+                })
+                return
+            }
+
+            let patientsToBeRescheduled = schedule.appointed_patients
+            const resch = await reschedulePatients(schedule, patientsToBeRescheduled)
+
+            if (!resch.success) {
+                res.json({ message: 'Could not reschedule patient(s)!', success: false })
+                return
+            }
+            db.query(`
+            DELETE FROM Schedule WHERE schedule_id=${schedule.schedule_id};`, (error, results) => {
                 if (error) {
-                    res.json(error.message)
+                    res.json({message: error.message, success: false})
                 } else {
-                    res.json({ message: 'Schedule Updated' })
+                    res.json({
+                        message: 'Schedule Deleted',
+                        succe: true
+                    })
                 }
             })
         } else {
@@ -151,9 +228,72 @@ async function updateSchedule(req, res) {
     }
 }
 
+async function reschedulePatients(schedule, patientsCount) {
+    try {
+        const patientsDescendingByTurn = (await db.query(`
+        SELECT *
+        FROM Patients
+        WHERE schedule_id=${schedule.schedule_id}
+        ORDER BY turn DESC
+        LIMIT ${patientsCount};
+        `)).rows
+
+        const patients = Array.from(patientsDescendingByTurn).reverse();
+
+        const next_schedules = (await db.query(`
+        SELECT * FROM Schedule WHERE doctor_id=${schedule.doctor_id}
+        AND start_time > '${schedule.start_time.toISOString()}';
+        `)).rows
+
+        let rescheduled = 0, coveredInRounds = 0, toCoverInRound = 0, empty_slots = 0;
+        for (let round = 0; round < next_schedules.length; round++) {
+            empty_slots = next_schedules.at(round).allowed_patients - next_schedules.at(round).appointed_patients
+
+            for (; (rescheduled < patientsCount) && (empty_slots); rescheduled++) {
+                const inc_turn_P = await db.query(`
+                UPDATE Patients
+                SET turn = turn + 1
+                WHERE schedule_id = ${next_schedules.at(round).schedule_id};
+                `)
+
+                toCoverInRound = empty_slots < (patientsCount - rescheduled) ? empty_slots : (patientsCount - rescheduled)
+                let index = coveredInRounds + toCoverInRound - 1
+
+                const reschedulePatient = await db.query(`
+                UPDATE Patients
+                SET schedule_id=${next_schedules.at(round).schedule_id}, turn=${1}
+                WHERE patient_id=${patients.at(index).patient_id}
+                `)
+                empty_slots--;
+                methods.UpdateAppointedPatients(patients.at(index).schedule_id)
+                methods.UpdateAppointedPatients(next_schedules.at(round).schedule_id)
+            }
+            coveredInRounds = rescheduled;
+            if (rescheduled == patientsCount)
+                break;
+        }
+
+        if (rescheduled < patientsCount) {
+            for (let i = rescheduled; i < patientsCount; i++) {
+                const deleteRemainingPatients = await db.query(`DELETE FROM Patients WHERE patient_id=${patients.at(i).patient_id};`)
+            }
+        }
+
+        return {
+            success: true,
+            message: 'Rescheduled'
+        }
+    } catch (error) {
+        return {
+            message: error.message
+        }
+    }
+
+}
+
 async function getAppointments(req, res) {
-    let user = await methods.getLoggedUser(req)
-    let isDoctor = await methods.CheckIsDoctor(user)
+    const user = await methods.getLoggedUser(req)
+    const isDoctor = await methods.CheckIsDoctor(req)
     if (!user) return null
     try {
         if (isDoctor) {
@@ -171,7 +311,7 @@ async function getAppointments(req, res) {
             WHERE
             s.doctor_id=${user.user_id};`)
 
-            let response = {
+            const response = {
                 isDoctor: true,
                 appointments: results.rows
             }
@@ -182,14 +322,17 @@ async function getAppointments(req, res) {
             const booked_results = await db.query(`SELECT
             s.start_time,
             s.end_time,
+            s.allowed_patients,
             u.name AS doctor_name,
             d.department,
             d.address,
-                d.fee,
-                p.patient_name,
-                p.age,
-                p.gender,
-                p.appointment_date
+            d.fee,
+            p.patient_name,
+            p.age,
+            p.gender,
+            p.appointment_date,
+            p.turn,
+            p.patient_id
             FROM
             Schedule s
             JOIN
@@ -202,6 +345,24 @@ async function getAppointments(req, res) {
             p.user_id=${user.user_id};`)
 
             booked = booked_results.rows
+            for (const appn of booked) {
+                let starttime = new Date(appn.start_time)
+                let endtime = new Date(appn.end_time)
+                const timeDiff = endtime - starttime // milliseconds
+
+                const minutes = Math.floor(timeDiff / 60000);
+                let interval = minutes / appn.allowed_patients
+                let end_mins = interval * appn.turn
+                let start_mins = end_mins - interval
+
+                const start_interval = new Date(starttime.getTime() + start_mins * 60000);
+                const end_interval = new Date(start_interval.getTime() + end_mins * 60000);
+
+                appn.start_interval = start_interval
+                appn.end_interval = end_interval
+
+                delete appn.allowed_patients
+            }
 
             let available = {}
             const available_results = await db.query(`SELECT
@@ -239,36 +400,32 @@ async function getAppointments(req, res) {
 }
 
 async function postAppointment(req, res) {
-    let user = await methods.getLoggedUser(req)
-    let data = req.body
-    let isDoctor = await methods.CheckIsDoctor(user)
+    const user = await methods.getLoggedUser(req)
+    const data = req.body
+    const isDoctor = await methods.CheckIsDoctor(req)
     try {
         if (!isDoctor) {
             const currentDate = new Date();
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth() + 1; // Note: Months are zero-based
-            const day = currentDate.getDate();
-            db.query(`INSERT INTO Patients (user_id, schedule_id, patient_name, age, gender, appointment_date) 
-            SELECT * FROM (
-                values (${user.user_id}, ${data.schedule_id}, '${data.patient_name}', ${data.age}, '${data.gender}', '${year}-${month}-${day}'::DATE)
-            ) AS i(user_id, schedule_id, patient_name, age, gender, appointment_date)
-            WHERE NOT EXISTS (
-               SELECT FROM Schedule sc
-               WHERE  sc.schedule_id = i.schedule_id
-               AND    sc.allowed_patients = sc.appointed_patients
-            );`, (error, results) => {
-                if (error) res.json(error.message)
-                else {
-                    db.query(`UPDATE Schedule SET appointed_patients = appointed_patients + 1 WHERE schedule_id=${data.schedule_id}`)
-                    res.json({
-                        message: `Appointment booked for ${data.patient_name}`,
-                        success: true  
-                    })
-                }
-            })
+            let appdate = methods.dateToString(currentDate)
+
+            let appointed_patients = (await db.query(`SELECT appointed_patients FROM Schedule WHERE schedule_id=${data.schedule_id};`)).rows.at(0).appointed_patients
+            let turn = parseInt(appointed_patients) + 1
+            const patient = {
+                user_id: user.user_id,
+                schedule_id: data.schedule_id,
+                patient_name: data.patient_name,
+                age: data.age,
+                gender: data.gender,
+                appointment_date: appdate,
+                turn
+            }
+            const response = await InsertPatient(patient)
+            console.log(response)
+            res.json(response)
         } else {
             res.json({
-                message: "Invalid Request!"
+                message: "Invalid Request!",
+                success: false
             })
         }
     } catch (error) {
@@ -278,9 +435,93 @@ async function postAppointment(req, res) {
     }
 }
 
+async function deleteAppointment(req, res) {
+    const isDoctor = await methods.CheckIsDoctor(req)
+    const data = req.body
+
+    if (isDoctor) res.json({
+        message: "Invalid Request!",
+        success: false
+    })
+    try {
+        const scheduleID = (await db.query(`SELECT schedule_id FROM Patients WHERE patient_id=${data.patient_id}`)).rows.at(0).schedule_id
+        db.query(`
+        DELETE FROM Patients WHERE patient_id=${data.patient_id} 
+        `, (error, results) => {
+            if (error) {
+                res.json({
+                    message: error.message,
+                    success: false
+                })
+            } else {
+                res.json({
+                    message: 'Deleted Appointment',
+                    success: true
+                })
+            }
+        })
+        const patientsCount = await methods.UpdateAppointedPatients(scheduleID)
+    } catch (error) {
+        res.json({
+            success: false,
+            message: error.message
+        })
+    }
+}
+
+async function InsertPatient(patient) {
+    try {
+        const insertQuery = `
+            INSERT INTO Patients (user_id, schedule_id, patient_name, age, gender, appointment_date, turn) 
+            SELECT * FROM (
+                VALUES (
+                    ${patient.user_id},
+                    ${patient.schedule_id},
+                    '${patient.patient_name}',
+                    ${patient.age},
+                    '${patient.gender}',
+                    '${patient.appointment_date}'::DATE,
+                    ${patient.turn}
+                )
+            ) AS i(user_id, schedule_id, patient_name, age, gender, appointment_date)
+            WHERE NOT EXISTS (
+                SELECT FROM Schedule sc
+                WHERE sc.schedule_id = i.schedule_id
+                AND sc.allowed_patients = sc.appointed_patients
+            );
+        `;
+
+        const insertResult = await new Promise((resolve, reject) => {
+            db.query(insertQuery, (error, results) => {
+                if (error) {
+                    reject({
+                        message: error.message,
+                        success: false
+                    });
+                } else {
+                    resolve({
+                        message: `Appointment booked for ${patient.patient_name}`,
+                        success: true
+                    });
+                }
+            });
+        });
+        const incAppPatients = await methods.UpdateAppointedPatients(patient.schedule_id)
+
+        if (incAppPatients.success)
+            return insertResult;
+    } catch (error) {
+        return {
+            message: error.message,
+            success: false
+        };
+    }
+}
+
+
 async function getProfile(req, res) {
-    let user = await methods.getLoggedUser(req)
-    let isDoctor = await methods.CheckIsDoctor(user)
+    const user = await methods.getLoggedUser(req)
+    const isDoctor = await methods.CheckIsDoctor(req)
     console.log(user)
 
     try {
@@ -311,12 +552,11 @@ async function getProfile(req, res) {
 }
 
 async function updateProfile(req, res) {
-    let user = await methods.getLoggedUser(req)
-    let isDoctor = await methods.CheckIsDoctor(user)
-    let indata = req.body
+    const user = await methods.getLoggedUser(req)
+    const isDoctor = await methods.CheckIsDoctor(req)
+    const indata = req.body
 
     try {
-
         if (indata.password) {
             let newPass = await methods.encryptPassword(indata.password)
             const results = await db.query(`UPDATE Users
@@ -345,4 +585,7 @@ async function updateProfile(req, res) {
 
 
 
-module.exports = { logOutUser, postSignUp, postLogin, getLogin, getSchedule, postSchedule, updateSchedule, getAppointments, postAppointment, getProfile, updateProfile }
+module.exports = {
+    logOutUser, postSignUp, postLogin, getLogin, getSchedule, postSchedule, updateSchedule, deleteSchedule,
+    getAppointments, postAppointment, deleteAppointment, getProfile, updateProfile
+}
