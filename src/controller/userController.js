@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken')
 const JWT_KEY = require('../config/keys.js')
 const methods = require('./methods.js');
-const { application } = require("express");
 
 
 function logOutUser(req, res) {

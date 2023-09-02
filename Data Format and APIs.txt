@@ -30,6 +30,9 @@ Patients Table:
     age 		    
     gender 		    'M', 'F' or 'O'
     appointment_date 	FORMAT 1999-01-08
+    turn   
+
+Posts, Questions, Answers, Votes Tables (work in progress...)
 
 
 ------ All Requests and Responses are in JSON Format
@@ -68,5 +71,8 @@ GET	    - for doctor, sends isDoctor=true and an array of all appointments conta
 POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
 DELETE  deletes appointment, requires patient_id (can be obtained from GET appointments)
 
-last updated 2023-09-02 00:38
+
+Question Answer Forrum Routes to be mentioned here.
+
+last updated 2023-09-03 00:36
 ...

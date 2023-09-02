@@ -70,6 +70,34 @@ CREATE TABLE Patients (
     turn INT NOT NULL
 );
 
+CREATE TABLE Posts (
+    post_id BIGSERIAL NOT NULL PRIMARY KEY,
+    date_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    upvotes INT NOT NULL,
+    downvotes INT NULL
+);
+
+CREATE TABLE Questions (
+    question_id BIGINT PRIMARY KEY REFERENCES Posts(post_id),
+    user_id INT REFERENCES Users(user_id),
+    question TEXT NOT NULL,
+    answers INT NOT NULL
+);
+
+CREATE TABLE Answers (
+    answer_id BIGINT PRIMARY KEY REFERENCES Posts(post_id),
+    question_id INT REFERENCES Questions(question_id),
+    doctor_id INT REFERENCES Doctors(doctor_id),
+    answer TEXT NOT NULL
+);
+
+CREATE TABLE Votes (
+    vote_id BIGSERIAL NOT NULL PRIMARY KEY,
+    post_id BIGINT REFERENCES Posts(post_id),
+    voter_id INT REFERENCES Users(user_id),
+    vote_type CHARACTER(1) NOT NULL check(vote_type IN ('U', 'D')) -- U: Up, D: Down
+);
+
 insert into Users (name, email, password) values ('Umair', 'ghi@gmail.com', '123');
 insert into Doctors (doctor_id, department, address, fee) values (4, 'cardiology', 'ABC123', 789);
 insert into Schedule (doctor_id, allowed_patients, appointed_patients, start_time, end_time) values (4, 5, 0, '2023-08-17 10:00:00+05', '2023-08-17 11:00:00+05');

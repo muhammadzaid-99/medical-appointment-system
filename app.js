@@ -15,5 +15,7 @@ app.listen(PORT, ()=>{
 app.use(express.static(path.join(__dirname, '/src/public')))
 
 const userRouter = require('./src/routers/userRouter.js')
+const postsRouter = require('./src/routers/postsRouter.js')
 
+app.use('/posts', postsRouter)
 app.use('/', userRouter)
