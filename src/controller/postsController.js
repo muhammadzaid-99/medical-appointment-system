@@ -6,31 +6,46 @@ const methods = require('./methods.js');
 
 async function getAllPosts(req, res) {
 
-    const posts = (await db.query(`
+    const questions = (await db.query(`
     SELECT
     p.date_time,
     p.upvotes,
     p.downvotes,
     q.question,
-    q.answers,
+    q.answers_count,
     q.question_id,
-    qu.name AS questioner_name,
-    au.name AS doctor_name,
-    a.answer
+    u.name
     FROM Posts p
     JOIN Questions q ON q.question_id = p.post_id
-    JOIN Answers a ON a.question_id = q.question_id
-    JOIN Users qu ON qu.user_id = q.user_id
-    JOIN Users au ON au.user_id = a.doctor_id
+    JOIN Users u ON u.user_id = q.user_id
     ;`)).rows
 
-    res.json(posts)
+    const answers = (await db.query(`
+    SELECT
+    p.date_time,
+    p.upvotes,
+    p.downvotes,
+    a.answer,
+    a.answer_id,
+    a.question_id,
+    u.name
+    FROM Posts p
+    JOIN Answers a ON a.answer_id = p.post_id
+    JOIN Users u ON u.user_id = a.doctor_id
+    ;`)).rows
+
+    for (let i = 0; i < questions.length; i++) {
+        const filteredAnswers = answers.filter(ans => ans.question_id == questions.at(i).question_id);
+        questions.at(i).answers = filteredAnswers
+    }
+
+    res.json(questions)
 }
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!
-// !!!!!!!!!!!!!!!!!!!!!!!!!    // should be moved to methods
+// !!!!!!!!!!!!!!!!!!!!!!!!!    // should be moved to methods i.e. without next()
 // !!!!!!!!!!!!!!!!!!!!!!!!!
-async function createPost(req, res, next) { 
+async function createPost(req, res, next) {
     try {
         const date = new Date();
         let currentDate = methods.dateToString(date)
@@ -59,7 +74,7 @@ async function createQuestion(req, res) {
         const user = await methods.getLoggedUser(req)
 
         const question = await db.query(`
-        INSERT INTO Questions (question_id, user_id, question, answers) values (${postID}, ${user.user_id}, '${data.question}', ${0})
+        INSERT INTO Questions (question_id, user_id, question, answers_count) values (${postID}, ${user.user_id}, '${data.question}', ${0})
         ;`)
 
         res.json({
@@ -94,7 +109,7 @@ async function createAnswer(req, res) {
         INSERT INTO Answers (answer_id, question_id, doctor_id, answer) values (${postID}, ${data.question_id}, ${user.user_id}, '${data.answer}')
         ;`)
 
-        // add replies counter here
+        const ans_count = await methods.UpdateAnswerCount(data.question_id)
 
         res.json({
             success: true,
@@ -108,6 +123,55 @@ async function createAnswer(req, res) {
     }
 }
 
+async function deletePost(req, res) {
+    try {
+        const post_id = req.body.post_id
+        const user = await methods.getLoggedUser(req)
+
+        const delQ = await db.query(`
+        DELETE FROM Questions WHERE question_id=${post_id} AND user_id=${user.user_id}
+        RETURNING question_id
+        ;`)
+
+        const delA = await db.query(`
+        DELETE FROM Answers WHERE (question_id=${post_id} OR answer_id=${post_id}) AND doctor_id=${user.user_id}
+        RETURNING answer_id
+        ;`)
+
+        if (delQ.rowCount || delA.rowCount) { // if any answer or question is deleted, delete linked post
+            const delVotesforQorA = await db.query(`
+            DELETE FROM Votes WHERE post_id=${post_id}
+            ;`)
+            const delPforQorA = await db.query(`
+            DELETE FROM Posts WHERE post_id=${post_id}
+            ;`)
+        }
+        if (delQ.rowCount) { // if the answers are deleted automatically with question
+            const ansIDs = delA.rows // not confirm whether works or not
+            for (let i = 0; i < ansIDs.length; i++) { 
+
+                const delVotesforAs = await db.query(`
+                DELETE FROM Votes WHERE post_id=${ansIDs.at(i).answer_id}
+                ;`)
+
+                const delPforAs = await db.query(`
+                DELETE FROM Posts WHERE post_id=${ansIDs.at(i).answer_id}
+                ;`)
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Post deleted.'
+        })
+    }
+    catch (error) {
+        res.json({
+            success: false,
+            message: 'Could not delete post.'
+        })
+    }
+}
 
 async function postVote(req, res) {
     try {
@@ -118,27 +182,72 @@ async function postVote(req, res) {
         SELECT voter_id FROM Votes WHERE post_id=${data.post_id} AND voter_id=${user.user_id}
         ;`)).rowCount
 
-        if (isAlreadyVoted) req.json({
-            success: false,
-            message: 'Cannot vote '
-        })
-    
-        const vote = await db.query(`
-        INSERT INTO Votes
-        (post_id, voter_id, vote_type)
-        values
-        (${data.post_id}, ${user.user_id}, '${data.vote_type}')
-        ;`)
-    } catch(error) {
+        if (isAlreadyVoted) {
+            const updateVote = await db.query(`
+            UPDATE TABLE Votes SET vote_type='${data.vote_type}'
+            WHERE voter_id=${user.user_id} AND post_id=${data.post_id}
+            ;`)
+
+            const unvote = await db.query(`
+            DELETE FROM Votes WHERE post_id=${data.post_id} AND voter_id=${user.user_id}
+            ;`)
+        } else {
+            const vote = await db.query(`
+            INSERT INTO Votes
+            (post_id, voter_id, vote_type)
+            values
+            (${data.post_id}, ${user.user_id}, '${data.vote_type}')
+            ;`)
+        }
+
+    } catch (error) {
         res.json({
             success: false,
             message: 'Could not save vote.'
         })
     }
+}
 
-    // INCOMPLETE ...........
+async function deleteVote(req, res) {
+    try {
+        const data = req.body
+        const user = await methods.getLoggedUser(req)
+
+        db.query(`
+        DELETE FROM Votes WHERE post_id=${data.post_id} AND voter_id=${user.user_id}
+        ;`, (error, results) => {
+            if (error) {
+                res.json({
+                    success: false,
+                    message: "Could not delete."
+                })
+            } else {
+                res.json({
+                    success: true,
+                    message: "Deleted vote."
+                })
+            }
+        })
+
+    } catch (error) {
+        res.json({
+            success: false,
+            message: 'Could not delete vote.'
+        })
+    }
+
+}
+
+async function test(req, res) {
+    return
+    const delA = await db.query(`
+    DELETE FROM Schedule WHERE (schedule_id=${2} OR appointed_patients=${0}) AND doctor_id=${38}
+    RETURNING schedule_id
+    ;`)
+
+    console.log(delA.rows)
 }
 
 module.exports = {
-    getAllPosts, createPost, createQuestion, createAnswer, postVote
+    getAllPosts, createPost, createQuestion, createAnswer, deletePost, postVote, deleteVote, test
 }

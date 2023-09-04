@@ -6,6 +6,7 @@ const postsController = require('../controller/postsController.js')
 postsRouter
     .route('/')
     .get(postsController.getAllPosts)
+    .delete(checkLogin, postsController.deletePost)
 
 postsRouter
     .route('/question')
@@ -18,5 +19,6 @@ postsRouter
 postsRouter
     .route('/vote')
     .post(checkLogin, postsController.postVote)
+    .delete(checkLogin, postsController.deleteVote)
 
 module.exports = postsRouter

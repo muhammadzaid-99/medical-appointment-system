@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken')
 const db = require("../database/db");
 const bcrypt = require('bcrypt');
 
+// HAS TO BE IMPROVED USING A NEW USERID COOKIE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 async function getLoggedUser(req) { // no export
     try {
         let logged_id = jwt.decode(req.cookies.login).payload
@@ -69,20 +70,20 @@ async function CheckIsDoctor(req) {
     return false
 }
 
-async function UpdateAppointedPatients(scheduleID) {
+async function UpdateAppointedPatients(schedule_id) {
     
     try {
         const count = (await db.query(`
         SELECT COUNT(*)
         FROM Patients
-        WHERE schedule_id = ${scheduleID};
+        WHERE schedule_id = ${schedule_id};
         `)).rows.at(0).count
         console.log(count)
         const updt = await db.query(`
         UPDATE Schedule
         SET appointed_patients = ${count}
-        WHERE schedule_id=${scheduleID}
-        `)
+        WHERE schedule_id=${schedule_id}
+        ;`)
         return {
             success: true,
             message: 'Done'
@@ -95,4 +96,29 @@ async function UpdateAppointedPatients(scheduleID) {
     }
 }
 
-module.exports = { getLoggedUser, getUserByEmail, encryptPassword, CheckIsDoctor, dateToString, UpdateAppointedPatients}
+async function UpdateAnswerCount(question_id) {
+    try {
+        const count = (await db.query(`
+        SELECT COUNT(*)
+        FROM Answers
+        WHERE question_id = ${question_id};
+        `)).rows.at(0).count
+        console.log(count)
+        const updt = await db.query(`
+        UPDATE Questions
+        SET answers_count = ${count}
+        WHERE question_id=${question_id}
+        ;`)
+        return {
+            success: true,
+            message: 'Done'
+        }
+    } catch(error) {
+        return {
+            success: false,
+            message: error.message
+        }
+    }
+}
+
+module.exports = { getLoggedUser, getUserByEmail, encryptPassword, CheckIsDoctor, dateToString, UpdateAppointedPatients, UpdateAnswerCount}
