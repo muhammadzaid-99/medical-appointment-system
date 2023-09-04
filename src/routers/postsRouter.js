@@ -15,4 +15,8 @@ postsRouter
     .route('/answer')
     .post(checkLogin, postsController.createPost, postsController.createAnswer)
 
+postsRouter
+    .route('/vote')
+    .post(checkLogin, postsController.postVote)
+
 module.exports = postsRouter

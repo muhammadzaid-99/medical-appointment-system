@@ -72,7 +72,7 @@ POST	requires schedule_id (can be obtained from GET appointments), patient_name,
 DELETE  deletes appointment, requires patient_id (can be obtained from GET appointments)
 
 
-Question Answer Forrum Routes to be mentioned here.
+Question Answer Forum Routes to be mentioned here.
 
 last updated 2023-09-03 00:36
 ...

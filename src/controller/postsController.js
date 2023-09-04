@@ -109,6 +109,36 @@ async function createAnswer(req, res) {
 }
 
 
+async function postVote(req, res) {
+    try {
+        const data = req.body
+        const user = await methods.getLoggedUser(req)
+
+        const isAlreadyVoted = (await db.query(`
+        SELECT voter_id FROM Votes WHERE post_id=${data.post_id} AND voter_id=${user.user_id}
+        ;`)).rowCount
+
+        if (isAlreadyVoted) req.json({
+            success: false,
+            message: 'Cannot vote '
+        })
+    
+        const vote = await db.query(`
+        INSERT INTO Votes
+        (post_id, voter_id, vote_type)
+        values
+        (${data.post_id}, ${user.user_id}, '${data.vote_type}')
+        ;`)
+    } catch(error) {
+        res.json({
+            success: false,
+            message: 'Could not save vote.'
+        })
+    }
+
+    // INCOMPLETE ...........
+}
+
 module.exports = {
-    getAllPosts, createPost, createQuestion, createAnswer
+    getAllPosts, createPost, createQuestion, createAnswer, postVote
 }
