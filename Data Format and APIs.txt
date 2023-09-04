@@ -32,7 +32,30 @@ Patients Table:
     appointment_date 	FORMAT 1999-01-08
     turn   
 
-Posts, Questions, Answers, Votes Tables (work in progress...)
+Posts Table:
+    post_id         SERIAL, PRIMARY, AUTOMATIC
+    date_time       ..
+    upvotes         INT
+    downvotes       INT
+
+
+Questions Table:
+    question_id         PRIMARY, REFERENCES Posts(post_id),
+    user_id             REFERENCES Users(user_id),
+    question            TEXT
+    answers_count       INT
+
+Answers Table:
+    answer_id           PRIMARY, REFERENCES Posts(post_id),
+    question_id         REFERENCES Questions(question_id),
+    doctor_id           REFERENCES Doctors(doctor_id),
+    answer              TEXT 
+
+Votes Table:
+    vote_id         SERIAL, PRIMARY, AUTOMATIC
+    post_id         REFERENCES Posts(post_id),
+    voter_id        REFERENCES Users(user_id),
+    vote_type       'U' or 'D' | U: upvote, D: downvote
 
 
 ------ All Requests and Responses are in JSON Format
@@ -72,7 +95,60 @@ POST	requires schedule_id (can be obtained from GET appointments), patient_name,
 DELETE  deletes appointment, requires patient_id (can be obtained from GET appointments)
 
 
-Question Answer Forum Routes to be mentioned here.
+### ---------- FORUM SECTION ---------- ###
 
-last updated 2023-09-03 00:36
+>> Route('/posts'):
+GET     get all posts (Q/A)=> format example:
+        [
+            {
+                "date_time": "2023-09-03T00:00:00.000Z",
+                "upvotes": 0,
+                "downvotes": 0,
+                "question": "What is oxygenated blood?",
+                "answers_count": 2,
+                "question_id": "5",
+                "name": "Qasim",
+                "my_post": true,
+                "answers": [
+                    {
+                        "date_time": "2023-09-03T00:00:00.000Z",
+                        "upvotes": 0,
+                        "downvotes": 0,
+                        "answer": "Oxygenated blood is blood that has a high concentration of oxygen, typically found in arteries.",
+                        "answer_id": "6",
+                        "question_id": 5,
+                        "name": "Shehzad",
+                        "my_post": false
+                    },
+                    {
+                        "date_time": "2023-09-03T00:00:00.000Z",
+                        "upvotes": 0,
+                        "downvotes": 0,
+                        "answer": "It is pumped from the heart to supply oxygen to body tissues and organs.",
+                        "answer_id": "7",
+                        "question_id": 5,
+                        "name": "Shehzad",
+                        "my_post": false
+                    }
+                ]
+            }
+        ]
+
+
+DELETE  requries question_id OR answer_id. Deleting question automatically deletes votes and its answers with votes.
+        A user/doctor can only delete their posts. my_post tells whether it is user's (logged in user) post or not.
+
+
+>> Route('/posts/question'): 
+POST    Posts a question. Requries 'question'
+
+>> Route('/posts/answer'): 
+POST    Posts an answer to a question. Only doctor can. Requries 'answer' and 'question_id'
+
+>> Route('/posts/vote'): 
+POST    Posts vote (upvote or downvote) to a post. Requires ['question_id' or 'answer_id'] AS 'post_id' and 'vote_type' ('U' or 'D')
+DELETE  Deletes vote (upvote or downvote) to a post. Requires ['question_id' or 'answer_id'] AS 'post_id'
+
+
+last updated 2023-09-05 21:43
 ...

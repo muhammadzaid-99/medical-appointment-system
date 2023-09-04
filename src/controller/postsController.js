@@ -6,6 +6,8 @@ const methods = require('./methods.js');
 
 async function getAllPosts(req, res) {
 
+    let user = await methods.getLoggedUser(req)
+    let checkID = user ? user.user_id : 0
     const questions = (await db.query(`
     SELECT
     p.date_time,
@@ -14,7 +16,8 @@ async function getAllPosts(req, res) {
     q.question,
     q.answers_count,
     q.question_id,
-    u.name
+    u.name,
+    CASE WHEN u.user_id = ${checkID} THEN true ELSE false END AS my_post
     FROM Posts p
     JOIN Questions q ON q.question_id = p.post_id
     JOIN Users u ON u.user_id = q.user_id
@@ -28,7 +31,8 @@ async function getAllPosts(req, res) {
     a.answer,
     a.answer_id,
     a.question_id,
-    u.name
+    u.name,
+    CASE WHEN u.user_id = ${checkID} THEN true ELSE false END AS my_post
     FROM Posts p
     JOIN Answers a ON a.answer_id = p.post_id
     JOIN Users u ON u.user_id = a.doctor_id
