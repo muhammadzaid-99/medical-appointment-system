@@ -9,7 +9,7 @@ const Pool = require('pg').Pool;
 // });
 
 const pool = new Pool({
-  connectionString: "dpostgres://godrrlka:Acp8x0qQVaRN6jOSALHqgAjKiD7KzZ61@satao.db.elephantsql.com/godrrlka"
+  connectionString: "${secrets.DBCONNSTRING}"
 })
 
 module.exports = {
