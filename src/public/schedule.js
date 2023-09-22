@@ -1,5 +1,5 @@
 function fetchSchedules() {
-  fetch("/schedule")
+  fetch("api/user/schedule")
     .then((response) => response.json())
     .then((data) => {
       const schedulesTable = document.getElementById("ScheduleTable");

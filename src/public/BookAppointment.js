@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     try {
       // Send the appointment data to the backend server
-      const response = await fetch("appointments", {
+      const response = await fetch("api/user/appointments", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

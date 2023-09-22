@@ -4,7 +4,7 @@ const checkLogin = require('./authValidator.js')
 const postsController = require('../controller/postsController.js')
 
 postsRouter
-    .route('/')
+    .route('/:page')
     .get(postsController.getAllPosts)
     .delete(checkLogin, postsController.deletePost)
 

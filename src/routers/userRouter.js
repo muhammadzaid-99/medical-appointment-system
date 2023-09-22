@@ -3,19 +3,6 @@ const userRouter = express.Router()
 const checkLogin = require('./authValidator.js')
 const userController = require('../controller/userController.js')
 
-userRouter
-    .route('/logout')
-    .get(userController.logOutUser)
-
-userRouter
-    .route('/signup')
-    .post(userController.postSignUp)
-
-userRouter
-    .route('/login')
-    .get(userController.getLogin)
-    .post(userController.postLogin)
-
 userRouter  // only for doctor
     .route('/schedule')
     .get(checkLogin, userController.getSchedule) 

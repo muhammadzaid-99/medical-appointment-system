@@ -8,6 +8,9 @@ async function getAllPosts(req, res) {
 
     let user = await methods.getLoggedUser(req)
     let checkID = user ? user.user_id : 0
+    let page = req.params.page > 0 ? req.params.page : 1;
+    let questionsPerPage = 1;
+
     const questions = (await db.query(`
     SELECT
     p.date_time,
@@ -21,7 +24,9 @@ async function getAllPosts(req, res) {
     FROM Posts p
     JOIN Questions q ON q.question_id = p.post_id
     JOIN Users u ON u.user_id = q.user_id
-    ;`)).rows
+    ORDER BY p.date_time DESC
+    LIMIT ${questionsPerPage} OFFSET ((${page} - 1) * ${questionsPerPage})
+    `)).rows
 
     const answers = (await db.query(`
     SELECT

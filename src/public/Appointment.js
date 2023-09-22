@@ -1,6 +1,6 @@
 // Function to fetch and display appointments
 function fetchAppointments() {
-  fetch("/appointments")
+  fetch("api/user/appointments")
     .then((response) => response.json())
     .then((data) => {
       // Assuming data structure is received as described

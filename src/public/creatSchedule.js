@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log(scheduleData);
 
     try {
-      const response = await fetch("schedule", {
+      const response = await fetch("api/user/schedule", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

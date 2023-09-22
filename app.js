@@ -16,6 +16,8 @@ app.use(express.static(path.join(__dirname, '/src/public')))
 
 const userRouter = require('./src/routers/userRouter.js')
 const postsRouter = require('./src/routers/postsRouter.js')
+const authRouter = require('./src/routers/authRouter.js')
 
-app.use('/posts', postsRouter)
-app.use('/', userRouter)
+app.use('/api/posts', postsRouter)
+app.use('/api/user', userRouter)
+app.use('/api/auth', authRouter)

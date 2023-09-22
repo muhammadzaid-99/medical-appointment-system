@@ -37,14 +37,15 @@ async function postLogin(req, res) {
                 let login_cookie = jwt.sign({ payload: uid }, JWT_KEY)
                 res.cookie('login', login_cookie)
                 // let isDoctor = await methods.CheckIsDoctor(user)
-                const isDoctor = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
-                let user_payload = isDoctor ? 1 : 0
+                const docExists = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
+                let user_payload = docExists ? 1 : 0
                 let usertype_cookie = jwt.sign({ payload: user_payload }, JWT_KEY)
+                let isDoctor = docExists ? true : false;
                 res.cookie('usertype', usertype_cookie)
                 res.json({
                     message: "Login Success!",
                     success: true,
-                    isDoctor: true
+                    isDoctor
                 })
 
             } else {
@@ -64,12 +65,12 @@ async function postLogin(req, res) {
 
 async function getLogin(req, res) {
     const user = await methods.getLoggedUser(req)
-    const isDoctor = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
-    let user_payload = isDoctor ? 1 : 0
-    let usertype_cookie = jwt.sign({ payload: user_payload }, JWT_KEY)
-    res.cookie('usertype', usertype_cookie)
-
+    
     if (user) {
+        const isDoctor = (await db.query(`SELECT * FROM Doctors WHERE doctor_id='${user.user_id}';`)).rowCount
+        let user_payload = isDoctor ? 1 : 0
+        let usertype_cookie = jwt.sign({ payload: user_payload }, JWT_KEY)
+        res.cookie('usertype', usertype_cookie)
         res.json({
             message: "Already logged in.",
             loggedIn: true
