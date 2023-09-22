@@ -9,7 +9,7 @@ const Pool = require('pg').Pool;
 // });
 
 const pool = new Pool({
-  connectionString: "${secrets.DBCONNSTRING}"
+  connectionString: ${secrets.DBCONNSTRING}
 })
 
 module.exports = {
