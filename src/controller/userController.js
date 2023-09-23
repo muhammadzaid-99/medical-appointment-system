@@ -175,9 +175,13 @@ async function reschedulePatients(schedule, patientsCount) {
         p.turn,
         p.patient_id,
         u.email,
-        u.name
+        u.name,
+		d.name AS doctor_name,
+		s.start_time
         FROM Patients p
         JOIN Users u ON u.user_id = p.user_id
+		JOIN Schedule s ON s.schedule_id = p.schedule_id
+		JOIN Users d ON d.user_id = s.doctor_id
         WHERE p.schedule_id=${schedule.schedule_id}
         ORDER BY p.turn DESC
         LIMIT ${patientsCount};
@@ -211,10 +215,11 @@ async function reschedulePatients(schedule, patientsCount) {
 				toCoverInRound = empty_slots < patientsCount - rescheduled ? empty_slots : patientsCount - rescheduled;
 				let index = coveredInRounds + toCoverInRound - 1;
 
+				const currentPatient = patients.at(index);
 				const reschedulePatient = await db.query(`
                 UPDATE Patients
                 SET schedule_id=${next_schedules.at(round).schedule_id}, turn=${1}
-                WHERE patient_id=${patients.at(index).patient_id}
+                WHERE patient_id=${currentPatient.patient_id}
                 `);
 
 				const emailData = {
@@ -222,12 +227,15 @@ async function reschedulePatients(schedule, patientsCount) {
 					subject: "Appointment Rescheduled",
 					text: "",
 					html: `
-                    <p>We are writing to inform you that your appointment has been rescheduled:</p>
+					<h4>Dear ${currentPatient.name},</h4>
+                    <p>You are being informed you that an appointment with Dr. ${
+						currentPatient.doctor_name
+					} on ${methods.dateToString(currentPatient.start_time)} has been rescheduled:</p>
 
-                    <div><strong>Patient Name:</strong> ${patients.at(index).patient_name}</div>
-                    <div><strong>User Name:</strong> ${patients.at(index).name}</div>
-                    <div><strong>Email:</strong> ${patients.at(index).email}</div>
-                    <div><strong>Booking Date:</strong> ${patients.at(index).appointment_date}</div>
+                    <div><strong>Patient Name:</strong> ${currentPatient.patient_name}</div>
+                    <div><strong>User Name:</strong> ${currentPatient.name}</div>
+                    <div><strong>Email:</strong> ${currentPatient.email}</div>
+                    <div><strong>Booking Date:</strong> ${currentPatient.appointment_date}</div>
 
                     <p>Please note that you can always review or cancel your appointment by logging in to your account.</p>
                 `,
@@ -244,23 +252,26 @@ async function reschedulePatients(schedule, patientsCount) {
 
 		if (rescheduled < patientsCount) {
 			for (let i = rescheduled; i < patientsCount; i++) {
+				const currentPatient = patients.at(i);
 				const deleteRemainingPatients = await db.query(
-					`DELETE FROM Patients WHERE patient_id=${patients.at(i).patient_id};`
+					`DELETE FROM Patients WHERE patient_id=${currentPatient.patient_id};`
 				);
 				const emailData = {
-					email: "crownab34@gmail.com", // patients email to be placed here
+					email: "crownab34@gmail.com", // currentPatienthere
 					subject: "Appointment Cancelled",
 					text: "",
 					html: `
                 
-                    <h4>Dear ${patients.at(i).patient_name},</h4>
+                    <h4>Dear ${currentPatient.name},</h4>
 
-                    <p>We regret to inform you that your appointment has been cancelled:</p>
+                    <p>We regret to inform you that an appointment with Dr. ${
+						currentPatient.doctor_name
+					} on ${methods.dateToString(currentPatient.start_time)} has been cancelled:</p>
 
-                    <div><strong>Patient Name:</strong> ${patients.at(i).patient_name}</div>
-                    <div><strong>User Name:</strong> ${patients.at(i).name}</div>
-                    <div><strong>Email:</strong> ${patients.at(i).email}</div>
-                    <div><strong>Booking Date:</strong> ${patients.at(i).appointment_date}</div>
+                    <div><strong>Patient Name:</strong> ${currentPatient.patient_name}</div>
+                    <div><strong>User Name:</strong> ${currentPatient.name}</div>
+                    <div><strong>Email:</strong> ${currentPatient.email}</div>
+                    <div><strong>Booking Date:</strong> ${currentPatient.appointment_date}</div>
 
                     <p>We apologize for any inconvenience this may have caused.</p>
                 `,
@@ -530,19 +541,6 @@ async function getProfile(req, res) {
             FROM Doctors AS D
             JOIN Users AS U ON D.doctor_id = U.user_id
             WHERE user_id=${user.user_id};`);
-			//   const emailData = {
-			//     email: "crownab34@gmail.com",
-			//     subject: "Hi",
-			//     text: `
-			//     `,
-			//     html: `
-			//     <h3>Your profile was opened</h3>
-			//     <div>Name: ${results.rows.at(0).name}</div>
-			//     <div>Address: ${results.rows.at(0).address}</div>
-			//     <div>Department: ${results.rows.at(0).department}</div>
-			//     `,
-			//   };
-			//   sendMail(emailData);
 			res.json(results.rows);
 		} else {
 			db.query(`SELECT name, email FROM Users WHERE user_id=${user.user_id};`, (error, results) => {
