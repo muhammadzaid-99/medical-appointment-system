@@ -1,19 +1,19 @@
 const express = require('express');
 const authRouter = express.Router()
 const checkLogin = require('./authValidator.js')
-const userController = require('../controller/userController.js')
+const authController = require('../controller/authController.js')
 
 authRouter
     .route('/logout')
-    .get(userController.logOutUser)
+    .get(authController.logOutUser)
 
 authRouter
     .route('/signup')
-    .post(userController.postSignUp)
+    .post(authController.postSignUp)
 
 authRouter
     .route('/login')
-    .get(userController.getLogin)
-    .post(userController.postLogin)
+    .get(authController.getLogin)
+    .post(authController.postLogin)
 
 module.exports = authRouter

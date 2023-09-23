@@ -1,7 +1,4 @@
 const db = require("../database/db");
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken')
-const JWT_KEY = require('../config/keys.js')
 const methods = require('./methods.js');
 
 async function getAllPosts(req, res) {
@@ -9,7 +6,7 @@ async function getAllPosts(req, res) {
     let user = await methods.getLoggedUser(req)
     let checkID = user ? user.user_id : 0
     let page = req.params.page > 0 ? req.params.page : 1;
-    let questionsPerPage = 1;
+    let questionsPerPage = 10;
 
     const questions = (await db.query(`
     SELECT
