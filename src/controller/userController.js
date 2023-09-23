@@ -437,7 +437,6 @@ async function InsertPatient(patient) {
     }
 }
 
-
 async function getProfile(req, res) {
     const user = await methods.getLoggedUser(req)
     const isDoctor = await methods.CheckIsDoctor(req)
