@@ -60,29 +60,29 @@ Votes Table:
 
 ------ All Requests and Responses are in JSON Format
 
-Route ('/signup'):
+API ('/api/auth/signup'):
 POST	- requires name, email, password and isDoctor = false in case of regular user
 	    - requires name, email, password, department, address, fee and isDoctor = true in case of doctor
 
-Route ('/login'):
+API ('/api/auth/login'):
 GET	    will return message and loggedIn (true or false)
 POST	requires email, password
 	
 
-Route('/logout'):
+API ('/api/auth/logout'):
 GET 	logs out user
 
-Route('/profile'):
+API ('/api/user/profile'):
 GET 	sends user name, email (and also department, address, fee in case of doctor)
 PUT     to update profile, requires name, password (optional) and department, address, fee (for doctor)
 
-Route('/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
+API ('/api/user/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
 GET	    sends an array of schedules of logged in doctor containing schedule_id, allowed_patients, appointed_patients, start_time, end_time
 POST	requires allowed_patients, start_time, end_time in format specified
 PUT     to update existing schedule, requires schedule_id, allowed_patients, patients will be rescheduled automatically, past schedules cannot be modifies
 DELETE  delete schedule or time_slot, requires schedule_id, patients will be rescheduled automatically, past schedules cannot be deleted
 
-Route('/appointments'): Only Patient can POST, DELETE on this route.
+API ('/api/user/appointments'): Only Patient can POST, DELETE on this route.
 GET	    - for doctor, sends isDoctor=true and an array of all appointments containing start_time, end_time, patient_name, age, gender, appointment_date
 	    - for user, sends isDoctor=false and two objects appointments and available_slots
 	    - appointments contain array of appointments containing patient_id, start_time, end_time, doctor_name, department, address, fee,
@@ -97,8 +97,9 @@ DELETE  deletes appointment, requires patient_id (can be obtained from GET appoi
 
 ### ---------- FORUM SECTION ---------- ###
 
->> Route('/posts'):
-GET     get all posts (Q/A)=> format example:
+>> API ('/api/posts/:page'):
+	'page' is a variable where page number is provided as all posts cannot be displayed on a single page
+GET     get all posts (on that page number) (Q/A)=> format example:
         [
             {
                 "date_time": "2023-09-03T00:00:00.000Z",
@@ -139,13 +140,13 @@ DELETE  requries question_id OR answer_id. Deleting question automatically delet
         A user/doctor can only delete their posts. my_post tells whether it is user's (logged in user) post or not.
 
 
->> Route('/posts/question'): 
+>> Route('/api/posts/question'): 
 POST    Posts a question. Requries 'question'
 
->> Route('/posts/answer'): 
+>> Route('/api/posts/answer'): 
 POST    Posts an answer to a question. Only doctor can. Requries 'answer' and 'question_id'
 
->> Route('/posts/vote'): 
+>> Route('/api/posts/vote'): 
 POST    Posts vote (upvote or downvote) to a post. Requires ['question_id' or 'answer_id'] AS 'post_id' and 'vote_type' ('U' or 'D')
 DELETE  Deletes vote (upvote or downvote) to a post. Requires ['question_id' or 'answer_id'] AS 'post_id'
 
