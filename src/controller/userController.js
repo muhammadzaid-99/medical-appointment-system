@@ -37,6 +37,11 @@ async function postSchedule(req, res) {
 	const isDoctor = await methods.CheckIsDoctor(req);
 	try {
 		if (isDoctor) {
+			if ((indata.end_time - indata.start_time) / (1000 * 60 * 60) > 8)
+				res.status(500).json({
+					message: "Schedule cannot be longer than 8 hours.",
+					success: false,
+				});
 			db.query(
 				`INSERT INTO Schedule (doctor_id, allowed_patients, appointed_patients, start_time, end_time)
             values (${logged_user.user_id}, ${indata.allowed_patients}, ${0}, '${indata.start_time}', '${

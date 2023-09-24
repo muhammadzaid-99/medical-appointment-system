@@ -78,7 +78,7 @@ PUT     to update profile, requires name, password (optional) and department, ad
 
 API ('/api/user/schedule'): This route is only for doctor, for regular user it will send message of Invalid Request.
 GET	    sends an array of schedules of logged in doctor containing schedule_id, allowed_patients, appointed_patients, start_time, end_time
-POST	requires allowed_patients, start_time, end_time in format specified
+POST	requires allowed_patients, start_time, end_time in format specified (time difference cannot be greater than 8 hours)
 PUT     to update existing schedule, requires schedule_id, allowed_patients, patients will be rescheduled automatically, past schedules cannot be modifies
 DELETE  delete schedule or time_slot, requires schedule_id, patients will be rescheduled automatically, past schedules cannot be deleted
 
@@ -90,6 +90,7 @@ GET	    - for doctor, sends isDoctor=true and an array of all appointments conta
 	    - available_slots contain array of appointments containing of start_time, end_time, doctor_name, schedule_id, address, fee, department
 
 !!!!    >>> Thinking of moving available_slots in /schedule route <<<
+!!!!    <<< Other major changes planned include filtering GET requests by date, etc. >>>
 
 POST	requires schedule_id (can be obtained from GET appointments), patient_name, age, gender
 DELETE  deletes appointment, requires patient_id (can be obtained from GET appointments)
