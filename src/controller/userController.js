@@ -11,19 +11,21 @@ async function getSchedule(req, res) {
 				`SELECT schedule_id, allowed_patients, appointed_patients, start_time, end_time FROM Schedule where doctor_id='${logged_user.user_id}';`,
 				(error, results) => {
 					if (error) {
-						res.json(error.message);
+						res.status(500).json(error.message);
 					} else {
-						res.json({
+						res.status(200).json({
+							// ok
 							schedules: results.rows,
 						});
 					}
 				}
 			);
 		} else {
-			res.json({ message: "Invalid Request" });
+			res.status(403).json({ message: "Invalid Request" }); // forbidden
 		}
 	} catch (error) {
-		res.json({
+		res.status(500).json({
+			// internal server error
 			message: error.message,
 		});
 	}
@@ -42,9 +44,9 @@ async function postSchedule(req, res) {
 				}')`,
 				(error, results) => {
 					if (error) {
-						res.json(error.message);
+						res.status(500).json(error.message);
 					} else {
-						res.json({
+						res.status(200).json({
 							message: "Schedule Created",
 							success: true,
 						});
@@ -52,10 +54,10 @@ async function postSchedule(req, res) {
 				}
 			);
 		} else {
-			res.json({ message: "Invalid Request" });
+			res.status(403).json({ message: "Invalid Request" });
 		}
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			message: error.message,
 		});
 	}
@@ -71,7 +73,7 @@ async function updateSchedule(req, res) {
 			const currentTime = new Date();
 			const scheduleTime = new Date(schedule.start_time.toISOString());
 			if (currentTime > scheduleTime) {
-				res.json({
+				res.status(200).json({
 					message: "Past schedules cannot be modified.",
 					success: false,
 				});
@@ -85,9 +87,9 @@ async function updateSchedule(req, res) {
                 AND start_time > NOW();`,
 					(error, results) => {
 						if (error) {
-							res.json(error.message);
+							res.status(500).json(error.message);
 						} else {
-							res.json({ message: "Schedule Updated", success: true });
+							res.status(200).json({ message: "Schedule Updated", success: true });
 						}
 					}
 				);
@@ -99,15 +101,15 @@ async function updateSchedule(req, res) {
 
 				let patientsToBeRescheduled = schedule.appointed_patients - inData.allowed_patients;
 				const resch = await reschedulePatients(schedule, patientsToBeRescheduled);
-				res.json({
+				res.status(resch.status).json({
 					message: resch.message,
 				});
 			}
 		} else {
-			res.json({ message: "Invalid Request" });
+			res.status(403).json({ message: "Invalid Request" });
 		}
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			message: error.message,
 		});
 	}
@@ -123,7 +125,7 @@ async function deleteSchedule(req, res) {
 			const scheduleTime = new Date(schedule.start_time.toISOString());
 			console.log("Time", currentTime > scheduleTime);
 			if (currentTime > scheduleTime) {
-				res.json({
+				res.status(200).json({
 					message: "Past schedules cannot be deleted.",
 					success: false,
 				});
@@ -134,7 +136,7 @@ async function deleteSchedule(req, res) {
 			const resch = await reschedulePatients(schedule, patientsToBeRescheduled);
 
 			if (!resch.success) {
-				res.json({
+				res.status(resch.status).json({
 					message: "Could not reschedule patient(s)!",
 					success: false,
 				});
@@ -145,9 +147,9 @@ async function deleteSchedule(req, res) {
             DELETE FROM Schedule WHERE schedule_id=${schedule.schedule_id};`,
 				(error, results) => {
 					if (error) {
-						res.json({ message: error.message, success: false });
+						res.status(500).json({ message: error.message, success: false });
 					} else {
-						res.json({
+						res.status(200).json({
 							message: "Schedule Deleted",
 							succe: true,
 						});
@@ -282,10 +284,12 @@ async function reschedulePatients(schedule, patientsCount) {
 
 		return {
 			success: true,
+			status: 200,
 			message: "Rescheduled",
 		};
 	} catch (error) {
 		return {
+			status: 500,
 			message: error.message,
 		};
 	}
@@ -315,7 +319,8 @@ async function getAppointments(req, res) {
 				isDoctor: true,
 				appointments: results.rows,
 			};
-			res.json(response);
+			if (results.rowCount) res.status(200).json(response);
+			else res.status(404).send("Not found");
 		} else {
 			let booked = {};
 			const booked_results = await db.query(`SELECT
@@ -389,10 +394,11 @@ async function getAppointments(req, res) {
 				appointments: booked,
 				available_slots: available,
 			};
-			res.json(response);
+			if (available_results.rowCount) res.status(200).json(response);
+			else res.status(404).send("Not found");
 		}
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			message: error.message,
 		});
 	}
@@ -402,6 +408,7 @@ async function postAppointment(req, res) {
 	const user = await methods.getLoggedUser(req);
 	const data = req.body;
 	const isDoctor = await methods.CheckIsDoctor(req);
+	const preCheckSchedule = await methods.UpdateAppointedPatients(data.schedule_id);
 	try {
 		if (!isDoctor) {
 			const currentDate = new Date();
@@ -422,15 +429,16 @@ async function postAppointment(req, res) {
 			};
 			const response = await InsertPatient(patient);
 			console.log(response);
-			res.json(response);
+			if (response.success) res.status(200).json(response);
+			else res.status(500).send(response.message);
 		} else {
-			res.json({
+			res.status(403).json({
 				message: "Invalid Request!",
 				success: false,
 			});
 		}
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			message: error.message,
 		});
 	}
@@ -441,7 +449,7 @@ async function deleteAppointment(req, res) {
 	const data = req.body;
 
 	if (isDoctor)
-		res.json({
+		res.status(403).json({
 			message: "Invalid Request!",
 			success: false,
 		});
@@ -455,12 +463,12 @@ async function deleteAppointment(req, res) {
         `,
 			(error, results) => {
 				if (error) {
-					res.json({
+					res.status(500).json({
 						message: error.message,
 						success: false,
 					});
 				} else {
-					res.json({
+					res.status(200).json({
 						message: "Deleted Appointment",
 						success: true,
 					});
@@ -469,7 +477,7 @@ async function deleteAppointment(req, res) {
 		);
 		const patientsCount = await methods.UpdateAppointedPatients(scheduleID);
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			success: false,
 			message: error.message,
 		});
@@ -513,9 +521,10 @@ async function InsertPatient(patient) {
 				}
 			});
 		});
-		const incAppPatients = await methods.UpdateAppointedPatients(patient.schedule_id);
-
-		if (incAppPatients.success) return insertResult;
+		if (insertResult.success) {
+			const incAppPatients = await methods.UpdateAppointedPatients(patient.schedule_id);
+		}
+		return insertResult;
 	} catch (error) {
 		return {
 			message: error.message,
@@ -541,17 +550,18 @@ async function getProfile(req, res) {
             FROM Doctors AS D
             JOIN Users AS U ON D.doctor_id = U.user_id
             WHERE user_id=${user.user_id};`);
-			res.json(results.rows);
+			if (results.rowCount) res.status(200).json(results.rows);
+			else res.status(404).send("Not found");
 		} else {
 			db.query(`SELECT name, email FROM Users WHERE user_id=${user.user_id};`, (error, results) => {
-				if (error) res.json(error.message);
+				if (error) res.status(404).json(error.message);
 				else {
-					res.json(results.rows);
+					res.status(200).json(results.rows);
 				}
 			});
 		}
 	} catch (error) {
-		res.json({ message: error.message });
+		res.status(500).json({ message: error.message });
 	}
 }
 
@@ -577,9 +587,9 @@ async function updateProfile(req, res) {
             SET department='${indata.department}', address='${indata.address}', fee=${indata.fee}
             WHERE doctor_id=${user.user_id};`);
 		}
-		res.json({ message: "Profile Updated Successfully!" });
+		res.status(200).json({ message: "Profile Updated Successfully!" });
 	} catch (error) {
-		res.json({
+		res.status(500).json({
 			message: error.message,
 		});
 	}

@@ -151,5 +151,4 @@ POST    Posts vote (upvote or downvote) to a post. Requires ['question_id' or 'a
 DELETE  Deletes vote (upvote or downvote) to a post. Requires ['question_id' or 'answer_id'] AS 'post_id'
 
 
-last updated 2023-09-05 21:43
 ...
