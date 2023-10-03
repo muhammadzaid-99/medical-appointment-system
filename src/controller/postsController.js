@@ -47,8 +47,9 @@ async function getAllPosts(req, res) {
 		const filteredAnswers = answers.filter((ans) => ans.question_id == questions.at(i).question_id);
 		questions.at(i).answers = filteredAnswers;
 	}
+	console.log(questions);
 
-	if (questions.rowCount) res.status(200).json(questions);
+	if (questions.at(0)) res.status(200).json(questions);
 	else res.status(404).send("Not found");
 }
 
