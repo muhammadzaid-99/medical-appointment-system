@@ -399,7 +399,7 @@ async function getAppointments(req, res) {
 				appointments: booked,
 				available_slots: available,
 			};
-			if (available_results.rowCount) res.status(200).json(response);
+			if (booked_results.rowCount || available_results.rowCount) res.status(200).json(response);
 			else res.status(404).send("Not found");
 		}
 	} catch (error) {
